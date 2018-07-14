@@ -2,21 +2,22 @@
   <p>
       You are not connected
   </p>
-  <div>
-    <mat-form-field class="privateKeyInput">
-      <input matInput placeholder="Private Key" [(ngModel)]='enteredPrivateKey'>
-      <mat-hint align="start"><strong>Let nobody copy this. Whoever knows it, controls all your funds.</strong> </mat-hint>
-      <mat-hint align="end">{{enteredPrivateKey.length}} / 66</mat-hint>
-    </mat-form-field>
-  </div>
+
   <div>
     <button
     mat-button
-    (click)="connect()"
-    color='primary'
-    [disabled]="enteredPrivateKey.length !== 66">
-      CONNECT
+    (click)="enterPrivateKey()">
+      ENTER PRIVATE KEY
     </button>
+  </div>
+
+  <div>
+    <button
+    mat-button
+    (click)="keystoreFileInput.click()">
+      LOAD KEYSTORE FILE
+    </button>
+    <input hidden type="file" #keystoreFileInput (change)="loadKeystoreFile($event)"/>
   </div>
 </div>
 

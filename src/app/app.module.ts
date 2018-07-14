@@ -35,6 +35,8 @@ import { AirswapService } from './services/airswap.service';
 import { Erc20Service } from './services/erc20.service';
 import { PriceService } from './services/price.service';
 import { Web3Service } from './services/web3.service';
+import { DialogLoadKeystoreComponent } from './components/account/dialog-load-keystore/dialog-load-keystore.component';
+import { DialogEnterPrivateKeyComponent } from './components/account/dialog-enter-private-key/dialog-enter-private-key.component';
 
 // AoT requires an exported function for factories
 export function HttpLoaderFactory(http: HttpClient) {
@@ -51,7 +53,9 @@ export function HttpLoaderFactory(http: HttpClient) {
     PriceComponent,
     LogsComponent,
     RoundPipe,
-    CallbackPipe
+    CallbackPipe,
+    DialogLoadKeystoreComponent,
+    DialogEnterPrivateKeyComponent
   ],
   imports: [
     BrowserModule,
@@ -75,6 +79,10 @@ export function HttpLoaderFactory(http: HttpClient) {
     Erc20Service,
     PriceService,
     Web3Service
+  ],
+  entryComponents: [
+    DialogEnterPrivateKeyComponent,
+    DialogLoadKeystoreComponent,
   ],
   bootstrap: [AppComponent]
 })
