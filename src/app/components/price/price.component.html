@@ -1,3 +1,26 @@
-<p>
-  price works!
-</p>
+<div *ngFor="let intent of airswapService.intents">
+  <div *ngIf="intent.makerProps && intent.takerProps">
+    <mat-form-field class="priceInput">
+      <input
+      matInput
+      number
+      placeholder="Your price to sell {{intent.makerProps.symbol}} for {{intent.takerProps.symbol}} (in {{intent.takerProps.symbol}} per {{intent.makerProps.symbol}})"
+      [(ngModel)]='enteredPrices[intent.makerProps.address+intent.takerProps.address]'>
+      <mat-hint align="start">CryptoCompare Price: {{intent.price}} {{intent.takerProps.symbol}} per {{intent.makerProps.symbol}} </mat-hint>
+      <button
+      mat-icon-button
+      matSuffix
+      matTooltip='Set Price'
+      color="primary"
+      aria-label="Set Price"
+      [disabled]=!priceValid(enteredPrices[intent.makerProps.address+intent.takerProps.address])
+      (click)="setPrice(
+        intent.makerProps,
+        intent.takerProps,
+        enteredPrices[intent.makerProps.address+intent.takerProps.address]
+      )">
+        <mat-icon>fast_forward</mat-icon>
+      </button>
+    </mat-form-field>
+  </div>
+</div>

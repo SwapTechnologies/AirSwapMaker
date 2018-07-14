@@ -39,6 +39,7 @@ export class AirswapService {
       });
     }
   }
+
   setIntents(intents): Promise<any> {
     if (this.connected) {
       return this.asProtocol.setIntents(intents)
