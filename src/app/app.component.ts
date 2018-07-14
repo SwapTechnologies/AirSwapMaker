@@ -5,6 +5,7 @@ import { AppConfig } from '../environments/environment';
 
 import { AirswapService } from './services/airswap.service';
 import { Erc20Service } from './services/erc20.service';
+import { LogsService } from './services/logs.service';
 import { PriceService } from './services/price.service';
 import { Web3Service } from './services/web3.service';
 
@@ -19,6 +20,7 @@ export class AppComponent {
     private translate: TranslateService,
     public airswapService: AirswapService,
     private erc20Service: Erc20Service,
+    private logsService: LogsService,
     private priceService: PriceService,
     private web3Service: Web3Service
   ) {
