@@ -1,9 +1,9 @@
 import 'zone.js/dist/zone-mix';
 import 'reflect-metadata';
 import '../polyfills';
-import { AppRoutingModule } from './app-routing.module';
 import { BrowserModule } from '@angular/platform-browser';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { AppRoutingModule } from './app-routing.module';
+// import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { FormsModule } from '@angular/forms';
 import { FlexLayoutModule } from '@angular/flex-layout';
 import { NgModule } from '@angular/core';
@@ -23,6 +23,10 @@ import { WebviewDirective } from './directives/webview.directive';
 
 import { AppComponent } from './app.component';
 import { HomeComponent } from './components/home/home.component';
+import { AccountComponent } from './components/account/account.component';
+import { IntentsComponent } from './components/intents/intents.component';
+import { PriceComponent } from './components/price/price.component';
+import { LogsComponent } from './components/logs/logs.component';
 
 // AoT requires an exported function for factories
 export function HttpLoaderFactory(http: HttpClient) {
@@ -33,12 +37,16 @@ export function HttpLoaderFactory(http: HttpClient) {
   declarations: [
     AppComponent,
     HomeComponent,
-    WebviewDirective
+    WebviewDirective,
+    AccountComponent,
+    IntentsComponent,
+    PriceComponent,
+    LogsComponent
   ],
   imports: [
-    AppRoutingModule,
     BrowserModule,
-    BrowserAnimationsModule,
+    AppRoutingModule,
+    // BrowserAnimationsModule,
     FlexLayoutModule,
     FormsModule,
     HttpClientModule,

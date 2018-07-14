@@ -1,21 +1,29 @@
 <div class="main-container">
   <mat-toolbar color='white' class='toolbar'>
-    <button mat-raised-button class="menu_button">
-      <mat-icon class='menu_icon'>person</mat-icon>
-      ACCOUNT
-    </button>
-    <button mat-raised-button class="menu_button">
-      <mat-icon class='menu_icon'>create</mat-icon>
-      INTENTS
-    </button>
-    <button mat-raised-button class="menu_button">
-      <mat-icon class='menu_icon'>attach_money</mat-icon>
-      PRICE
-    </button>
-    <button mat-raised-button class="menu_button">
-      <mat-icon class='menu_icon'>local_library</mat-icon>
-      LOGS
-    </button>
+    <a routerLink="./account">
+      <button mat-raised-button class="menu_button">
+        <mat-icon class='menu_icon'>person</mat-icon>
+        ACCOUNT
+      </button>
+    </a>
+    <a routerLink="./intents">
+      <button mat-raised-button class="menu_button">
+        <mat-icon class='menu_icon'>create</mat-icon>
+        INTENTS
+      </button>
+    </a>
+    <a routerLink="./price">
+      <button mat-raised-button class="menu_button">
+        <mat-icon class='menu_icon'>attach_money</mat-icon>
+        PRICE
+      </button>
+    </a>
+    <a routerLink="./logs">
+      <button mat-raised-button class="menu_button">
+        <mat-icon class='menu_icon'>local_library</mat-icon>
+        LOGS
+      </button>
+    </a>
   </mat-toolbar>
   <mat-card class='main-content'>
     <router-outlet></router-outlet>
