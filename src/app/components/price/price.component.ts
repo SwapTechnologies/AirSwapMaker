@@ -21,7 +21,6 @@ export class PriceComponent implements OnInit {
   ngOnInit() {
     this.airswapService.getIntents()
     .then(() => {
-      const tokenSymbolList = [];
       for (const intent of this.airswapService.intents) {
         const makerProps = this.erc20Service.getToken(intent.makerToken.toLowerCase());
         const takerProps = this.erc20Service.getToken(intent.takerToken.toLowerCase());
@@ -34,24 +33,34 @@ export class PriceComponent implements OnInit {
               this.priceService.limitPrices[makerProps.address][takerProps.address]
               * 10 ** (makerProps.decimals - takerProps.decimals);
           }
-          if (!(tokenSymbolList.indexOf(intent.makerProps.symbol) >= 0)) {
-            tokenSymbolList.push(intent.makerProps.symbol);
-          }
-          if (!(tokenSymbolList.indexOf(intent.takerProps.symbol) >= 0)) {
-            tokenSymbolList.push(intent.takerProps.symbol);
-          }
         }
       }
-      this.priceService.getPricesOfList(tokenSymbolList)
-      .then((usdPrices) => {
-        this.usdPrices = usdPrices;
-        for (const intent of this.airswapService.intents) {
-          if (intent.makerProps && intent.takerProps) {
-            intent.price = this.usdPrices[intent.makerProps.symbol] / this.usdPrices[intent.takerProps.symbol];
-          }
+      this.getUsdPrices();
+      this.priceService.setPricingLogic();
+    });
+  }
+
+  getUsdPrices(): Promise<any> {
+    const tokenSymbolList = [];
+    for (const intent of this.airswapService.intents) {
+      if (intent.makerProps && intent.takerProps) {
+        if (!(tokenSymbolList.indexOf(intent.makerProps.symbol) >= 0)) {
+          tokenSymbolList.push(intent.makerProps.symbol);
         }
-        this.priceService.setPricingLogic();
-      });
+        if (!(tokenSymbolList.indexOf(intent.takerProps.symbol) >= 0)) {
+          tokenSymbolList.push(intent.takerProps.symbol);
+        }
+      }
+    }
+
+    return this.priceService.getPricesOfList(tokenSymbolList)
+    .then((usdPrices) => {
+      this.usdPrices = usdPrices;
+      for (const intent of this.airswapService.intents) {
+        if (intent.makerProps && intent.takerProps) {
+          intent.price = this.usdPrices[intent.makerProps.symbol] / this.usdPrices[intent.takerProps.symbol];
+        }
+      }
     });
   }
 
