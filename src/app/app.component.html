@@ -6,27 +6,29 @@
         ACCOUNT
       </button>
     </a>
-    <a routerLink="./intents">
-      <button mat-raised-button class="menu_button">
-        <mat-icon class='menu_icon'>create</mat-icon>
-        INTENTS
-      </button>
-    </a>
-    <a routerLink="./price">
-      <button mat-raised-button class="menu_button">
-        <mat-icon class='menu_icon'>attach_money</mat-icon>
-        PRICE
-      </button>
-    </a>
-    <a routerLink="./logs">
-      <button mat-raised-button class="menu_button">
-        <mat-icon class='menu_icon'>local_library</mat-icon>
-        LOGS
-      </button>
-    </a>
+    <span *ngIf="airswapService.connected && airswapService.isAuthenticated">
+      <a routerLink="./intents">
+        <button mat-raised-button class="menu_button">
+          <mat-icon class='menu_icon'>create</mat-icon>
+          INTENTS
+        </button>
+      </a>
+      <a routerLink="./price">
+        <button mat-raised-button class="menu_button">
+          <mat-icon class='menu_icon'>attach_money</mat-icon>
+          PRICE
+        </button>
+      </a>
+      <a routerLink="./logs">
+        <button mat-raised-button class="menu_button">
+          <mat-icon class='menu_icon'>local_library</mat-icon>
+          LOGS
+        </button>
+      </a>
+    </span>
   </mat-toolbar>
-  <div class='main-content'>
+  <mat-card class='main-content'>
     <router-outlet></router-outlet>
-  </div>
+  </mat-card>
 </div>
 

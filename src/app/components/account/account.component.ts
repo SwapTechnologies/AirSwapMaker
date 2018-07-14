@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 
-import { Web3Service } from '../../services/web3.service';
+import { AirswapService } from '../../services/airswap.service';
 @Component({
   selector: 'app-account',
   templateUrl: './account.component.html',
@@ -8,11 +8,17 @@ import { Web3Service } from '../../services/web3.service';
 })
 export class AccountComponent implements OnInit {
 
+  public enteredPrivateKey = '';
+
   constructor(
-    public web3Service: Web3Service,
+    public airswapService: AirswapService,
   ) { }
 
   ngOnInit() {
+  }
+
+  connect() {
+    this.airswapService.connect(this.enteredPrivateKey);
   }
 
 }

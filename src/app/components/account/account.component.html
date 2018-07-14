@@ -1,16 +1,26 @@
-<div *ngIf="!web3Service.connected">
+<div *ngIf="!airswapService.connected" class='privateKeyContainer'>
   <p>
       You are not connected
   </p>
   <div>
-    <!-- <mat-form-field class="example-full-width">
-      <input matInput placeholder="Private Key" value="Sushi">
+    <mat-form-field class="privateKeyInput">
+      <input matInput placeholder="Private Key" [(ngModel)]='enteredPrivateKey'>
       <mat-hint align="start"><strong>Let nobody copy this. Whoever knows it, controls all your funds.</strong> </mat-hint>
-    </mat-form-field> -->
+      <mat-hint align="end">{{enteredPrivateKey.length}} / 66</mat-hint>
+    </mat-form-field>
+  </div>
+  <div>
+    <button
+    mat-button
+    (click)="connect()"
+    color='primary'
+    [disabled]="enteredPrivateKey.length !== 66">
+      CONNECT
+    </button>
   </div>
 </div>
 
 
-<div *ngIf="web3Service.connected">
-  You are connected
+<div *ngIf="airswapService.connected">
+  You are connected as {{this.airswapService.getAccount()}}
 </div>

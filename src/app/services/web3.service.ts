@@ -9,9 +9,6 @@ const Web3 = require('web3');
 export class Web3Service {
 
   public _web3: any;
-  public privateKey: string;
-  public publicKey: string;
-  public connected: boolean;
 
   constructor() { }
 

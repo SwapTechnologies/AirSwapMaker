@@ -17,7 +17,7 @@ export class AppComponent {
   constructor(
     public electronService: ElectronService,
     private translate: TranslateService,
-    private airswapService: AirswapService,
+    public airswapService: AirswapService,
     private erc20Service: Erc20Service,
     private priceService: PriceService,
     private web3Service: Web3Service
