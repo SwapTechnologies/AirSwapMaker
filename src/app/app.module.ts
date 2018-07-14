@@ -12,6 +12,10 @@ import { NgMaterialModule } from './modules/ng-material/ng-material.module';
 
 import { HttpClientModule, HttpClient } from '@angular/common/http';
 
+// pipes
+import { RoundPipe } from './pipes/round';
+import { CallbackPipe } from './pipes/callback';
+
 // NG Translate
 import { TranslateModule, TranslateLoader } from '@ngx-translate/core';
 import { TranslateHttpLoader } from '@ngx-translate/http-loader';
@@ -45,7 +49,9 @@ export function HttpLoaderFactory(http: HttpClient) {
     AccountComponent,
     IntentsComponent,
     PriceComponent,
-    LogsComponent
+    LogsComponent,
+    RoundPipe,
+    CallbackPipe
   ],
   imports: [
     BrowserModule,

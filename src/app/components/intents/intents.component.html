@@ -1,3 +1,167 @@
-<p>
-  intents works!
-</p>
+<div>
+    <p *ngIf="errorMessage" style='color:red;'>
+      <strong>Error returned: {{errorMessage}}</strong>
+    </p>
+
+    <div *ngIf="!initialized"
+    style="display:flex; flex-flow: row wrap; justify-content: center;">
+      <mat-progress-spinner
+      class="progress_spinner"
+      color="primary"
+      mode="indeterminate">
+      </mat-progress-spinner>
+    </div>
+
+    <div *ngIf="initialized && balanceTooLow">
+      <p>
+        Your AST balance is too low to add any more intents! You have {{astBalance}} AST
+        <button
+        mat-icon-button
+        color="primary"
+        matTooltip="Refresh my balance"
+        (click)="initialize()">
+          <mat-icon>autorenew</mat-icon>
+        </button>
+      </p>
+    </div>
+
+    <div>
+      <!-- Start Show Set Intent -->
+      <div *ngIf="!balanceTooLow">
+        <div>
+          <i>Your account holds {{astBalance}} AST and can set {{remainingIntents}} more intents</i>
+        </div>
+        <mat-form-field>
+          <input
+          type="text"
+          placeholder="Add signal you sell"
+          aria-label="makerToken"
+          matInput
+          [(ngModel)]='makerTokenName'
+          (ngModelChange)='enteredMakerTokenName()'
+          (keydown.enter)="addTokenPair()"
+          [matAutocomplete]="autoMaker">
+          <mat-autocomplete #autoMaker="matAutocomplete">
+            <mat-option
+            *ngFor="let token of filteredValidatedMakerTokens | callback: filterEther"
+            [value]="token.name">
+              {{ token.name }}
+            </mat-option>
+          </mat-autocomplete>
+          <mat-hint *ngIf="makerToken">{{makerToken.address.slice(0,14)}}...</mat-hint>
+          <button
+          mat-icon-button
+          matSuffix
+          color="primary"
+          matTooltip="Clear Field"
+          [disabled]="!makerTokenName"
+          (click)="clearMakerTokenName()">
+          <mat-icon>clear</mat-icon>
+          </button>
+        </mat-form-field>
+        <mat-form-field>
+          <input
+          type="text"
+          placeholder="when others give you"
+          aria-label="takerToken"
+          matInput
+          [(ngModel)]='takerTokenName'
+          (ngModelChange)='enteredTakerTokenName()'
+          (keydown.enter)="addTokenPair()"
+          [matAutocomplete]="autoTaker">
+          <mat-autocomplete #autoTaker="matAutocomplete">
+            <mat-option
+            *ngFor="let token of filteredValidatedTakerTokens"
+            [value]="token.name">
+              {{ token.name }}
+            </mat-option>
+          </mat-autocomplete>
+          <mat-hint *ngIf="takerToken">{{takerToken.address.slice(0,14)}}...</mat-hint>
+          <button
+          mat-icon-button
+          matSuffix
+          color="primary"
+          matTooltip="Clear Field"
+          [disabled]="!takerTokenName"
+          (click)="clearTakerTokenName()">
+          <mat-icon>clear</mat-icon>
+          </button>
+        </mat-form-field>
+        <button
+          mat-icon-button
+          color="primary"
+          matTooltip="Add intent to indexer"
+          (click)="addTokenPair()">
+          <mat-icon>add</mat-icon>
+        </button>
+      </div>
+      <!-- End Show Set Intent -->
+      <div *ngIf="makerToken || takerToken">
+        <div>
+          <i>In your wallet are:</i><br>
+          <span *ngIf="balanceMakerToken">
+            <strong>{{balanceMakerToken / makerDecimals}}
+            {{makerToken.symbol}}</strong>
+          </span>
+          <span *ngIf="balanceTakerToken">
+            {{balanceTakerToken / takerDecimals}}
+            {{takerToken.symbol}}
+          </span>
+        </div>
+        <div *ngIf="balanceMakerToken && balanceMakerToken == 0">
+          <i><strong style="color: red">You do not hold any of the tokens you want to sell. This intent does not make a lot of sense.</strong></i>
+        </div>
+      </div>
+      <!-- Start Show My Intents -->
+      <div *ngIf="airswapService.intents.length > 0" class="row">
+        <div>
+          <p><i>Your intents are</i></p>
+          <mat-selection-list
+          [(ngModel)]="intentsMarkedForRemoval"
+          (ngModelChange)="changedList($event)">
+            <mat-list-option *ngFor="let intent of airswapService.intents"
+            [value]="intent">
+              You sell
+              <ng-container *ngIf="intent.makerProps"> {{intent.makerProps.symbol}} </ng-container>
+              <ng-container *ngIf="!intent.makerProps"> ??? </ng-container>
+              for
+              <ng-container *ngIf="intent.takerProps"> {{intent.takerProps.symbol}} </ng-container>
+              <ng-container *ngIf="!intent.takerProps"> ??? </ng-container>
+              <mat-icon *ngIf="!intent.makerProps" matPrefix inline="true" matTooltip="Maker Token unknown to Database: {{intent.makerToken}}">help_outline</mat-icon>
+              <mat-icon *ngIf="!intent.takerProps" matPrefix inline="true" matTooltip="Taker Token unknown to Database: {{intent.takerToken}}">help_outline</mat-icon>
+            </mat-list-option>
+          </mat-selection-list>
+        </div>
+        <div *ngIf="markedIntents">
+          <button
+          mat-raised-button
+          (click)="removeMarkedIntents()">
+            REMOVE MARKED INTENTS
+          </button>
+        </div>
+      </div>
+      <!-- End Show My Intents -->
+
+      <!-- Start Show unapproved tokens that want to be traded -->
+      <div style='color:red;' *ngIf="unapprovedTokens.length > 0">
+        <strong>
+          You want to trade unapproved tokens.
+        </strong>
+        <p>
+          You have to approve them or the AirSwap smart contract is not able to swap the token for you.
+        </p>
+        <div class="row">
+          <mat-list>
+            <mat-list-item *ngFor="let token of unapprovedTokens">
+              <button mat-raised-button
+              [disabled]="clickedApprove[token]"
+              (click)="approveMaker(token)">
+                APPROVE {{tokenSymbol(token)}}
+              </button>
+            </mat-list-item>
+          </mat-list>
+        </div>
+      </div>
+      <!-- End Show unapproved tokens that want to be traded -->
+    </div>
+  </div>

@@ -30,15 +30,23 @@ export class AirswapService {
     });
   }
 
-  getIntents() {
+  getIntents(): Promise<any> {
     if (this.connected) {
-      this.asProtocol.getIntents()
+      return this.asProtocol.getIntents()
       .then(result => {
         this.intents = result;
+        return result;
       });
     }
   }
-
+  setIntents(intents): Promise<any> {
+    if (this.connected) {
+      return this.asProtocol.setIntents(intents)
+      .then(result => {
+        return result;
+      });
+    }
+  }
   getAccount(): string {
     return this.asProtocol.wallet.address;
   }
