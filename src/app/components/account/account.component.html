@@ -1,3 +1,16 @@
-<p>
-  account works!
-</p>
+<div *ngIf="!web3Service.connected">
+  <p>
+      You are not connected
+  </p>
+  <div>
+    <!-- <mat-form-field class="example-full-width">
+      <input matInput placeholder="Private Key" value="Sushi">
+      <mat-hint align="start"><strong>Let nobody copy this. Whoever knows it, controls all your funds.</strong> </mat-hint>
+    </mat-form-field> -->
+  </div>
+</div>
+
+
+<div *ngIf="web3Service.connected">
+  You are connected
+</div>
