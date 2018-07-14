@@ -37,6 +37,8 @@ export class IntentsComponent implements OnInit {
   public balanceMakerToken: number;
   public balanceTakerToken: number;
 
+  public approveHashes: {};
+
   constructor(
     public airswapService: AirswapService,
     public erc20Service: Erc20Service,
@@ -63,41 +65,23 @@ export class IntentsComponent implements OnInit {
           const takerProps = this.erc20Service.getToken(intent.takerToken.toLowerCase());
           intent.makerProps = makerProps;
           intent.takerProps = takerProps;
-          console.log(makerProps, takerProps);
         }
-        // this.checkApproval();
-        this.initialized = true;
+        this.checkApproval();
       });
     }
   }
 
   getAstBalance() {
-    console.log('getting balance', this.erc20Service.getTokenByName('AirSwap Token').address);
-    console.log(this.airswapService.asProtocol.wallet.address);
     this.erc20Service.balance(
       this.erc20Service.getTokenByName('AirSwap Token').address,
       this.airswapService.asProtocol.wallet.address
     ).then(balance => {
-      console.log(balance);
       this.astBalance = balance / 1e4;
       this.balanceTooLow = this.astBalance - 250 * this.myIntents.length < 250;
       this.remainingIntents = Math.floor((this.astBalance - 250 * this.myIntents.length) / 250);
+      this.initialized = true;
     });
   }
-
-  // initialize() {
-  //   this.getMyIntents()
-  //   .then(() => {
-  //     return this.erc20service.balance(
-  //       this.erc20Service.getTokenByName('AirSwap Token').address,
-  //       this.airswapService.asProtocol.wallet.address);
-  //   }).then(balance => {
-  //     this.astBalance = balance / 1e4;
-  //     this.balanceTooLow = this.astBalance - 250 * this.airswapService.intents.length < 250;
-  //     this.remainingIntents = Math.floor((this.astBalance - 250 * this.airswapService.intents.length) / 250);
-  //     this.initialized = true;
-  //   });
-  // }
 
   enteredMakerTokenName(): void {
     this.filteredValidatedMakerTokens = this.erc20Service.validatedTokens.filter(x => {
@@ -194,26 +178,28 @@ export class IntentsComponent implements OnInit {
     const promiseList = [];
     this.unapprovedTokens = [];
     for (const intent of this.airswapService.intents) {
-      const contract = this.erc20Service.getContract(intent.makerToken);
-      this.clickedApprove[intent.makerToken] = false;
-      promiseList.push(
-        this.erc20Service.approvedAmountAirSwap(contract)
-        .then(approvedAmount => {
-          if (!(approvedAmount > 0)
-          && !this.unapprovedTokens.find(x => x === intent.makerToken) ) {
-            this.unapprovedTokens.push(intent.makerToken);
-          }
-        })
-      );
+      if (intent.makerToken) {
+        const contract = this.erc20Service.getContract(intent.makerToken);
+        this.clickedApprove[intent.makerToken] = false;
+        promiseList.push(
+          this.erc20Service.approvedAmountAirSwap(contract)
+          .then(approvedAmount => {
+            if (!(approvedAmount > 0)
+            && !this.unapprovedTokens.find(x => x === intent.makerToken) ) {
+              this.unapprovedTokens.push(intent.makerToken);
+            }
+          })
+        );
+      }
     }
   }
 
   approveMaker(makerToken: string): void {
     this.clickedApprove[makerToken] = true;
     const contract = this.erc20Service.getContract(makerToken);
-    this.erc20Service.approve(contract, this.airswapService.asProtocol.exchangeContract.address)
+    this.erc20Service.approve(makerToken)
     .then(result => {
-      this.checkApproval();
+      this.approveHashes[makerToken] = result.hash;
     })
     .catch(error => {
       console.log('Approve failed.');

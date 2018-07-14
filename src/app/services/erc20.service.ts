@@ -138,28 +138,19 @@ export class Erc20Service {
     .then(approvedAmount => approvedAmount);
   }
 
-  approve(contract: any, spender: string): Promise<any> {
-    let approveMethod;
+  approve(contractAddress): Promise<any> {
     let gasPrice = 10e9;
-
     return this.http.get('https://ethgasstation.info/json/ethgasAPI.json')
     .toPromise()
     .then(ethGasStationResult => {
       if (ethGasStationResult['average']) {
         gasPrice = ethGasStationResult['average'] / 10 * 1e9;
       }
-      return this.decimals(contract);
-    }).then(decimals => {
-      const largeApproval = this.toFixed(1e21 * 10 ** decimals);
-      approveMethod = contract.methods
-      .approve(spender, largeApproval);
-      return approveMethod.estimateGas({from: this.airswapService.asProtocol.wallet.address});
-    }).then(estimatedGas => {
-      return approveMethod.send({
-        from: this.airswapService.asProtocol.wallet.address,
-        gas: Math.round(estimatedGas * 1.1),
-        gasPrice: gasPrice
-      });
+      return this.airswapService.asProtocol.approveTokenForTrade(
+        contractAddress,
+        {
+          gasPrice: gasPrice
+        });
     });
   }
 }
