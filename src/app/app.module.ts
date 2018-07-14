@@ -1,13 +1,17 @@
 import 'zone.js/dist/zone-mix';
 import 'reflect-metadata';
 import '../polyfills';
+import { AppRoutingModule } from './app-routing.module';
 import { BrowserModule } from '@angular/platform-browser';
-import { NgModule } from '@angular/core';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { FormsModule } from '@angular/forms';
+import { FlexLayoutModule } from '@angular/flex-layout';
+import { NgModule } from '@angular/core';
+import { NgMaterialModule } from './modules/ng-material/ng-material.module';
 
 import { HttpClientModule, HttpClient } from '@angular/common/http';
 
-import { AppRoutingModule } from './app-routing.module';
+
 
 // NG Translate
 import { TranslateModule, TranslateLoader } from '@ngx-translate/core';
@@ -32,10 +36,13 @@ export function HttpLoaderFactory(http: HttpClient) {
     WebviewDirective
   ],
   imports: [
+    AppRoutingModule,
     BrowserModule,
+    BrowserAnimationsModule,
+    FlexLayoutModule,
     FormsModule,
     HttpClientModule,
-    AppRoutingModule,
+    NgMaterialModule,
     TranslateModule.forRoot({
       loader: {
         provide: TranslateLoader,
