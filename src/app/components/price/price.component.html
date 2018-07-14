@@ -4,6 +4,11 @@
       <input
       matInput
       number
+      (keydown.enter)="setPrice(
+        intent.makerProps,
+        intent.takerProps,
+        enteredPrices[intent.makerProps.address+intent.takerProps.address]
+      )"
       placeholder="Your price to sell {{intent.makerProps.symbol}} for {{intent.takerProps.symbol}} (in {{intent.takerProps.symbol}} per {{intent.makerProps.symbol}})"
       [(ngModel)]='enteredPrices[intent.makerProps.address+intent.takerProps.address]'>
       <mat-hint align="start">CryptoCompare Price: {{intent.price}} {{intent.takerProps.symbol}} per {{intent.makerProps.symbol}} </mat-hint>

@@ -64,12 +64,14 @@ export class PriceComponent implements OnInit {
   }
 
   setPrice(makerProps: any, takerProps: any, price: number) {
-    if (!this.priceService.limitPrices[makerProps.address]) {
-      this.priceService.limitPrices[makerProps.address] = {};
+    if (this.priceValid(price)) {
+      if (!this.priceService.limitPrices[makerProps.address]) {
+        this.priceService.limitPrices[makerProps.address] = {};
+      }
+      this.priceService.limitPrices[makerProps.address][takerProps.address] =
+        price * 10 ** (takerProps.decimals - makerProps.decimals);
+      this.priceService.setPricingLogic();
     }
-    this.priceService.limitPrices[makerProps.address][takerProps.address] =
-      price * 10 ** (takerProps.decimals - makerProps.decimals);
-    this.priceService.setPricingLogic();
   }
 
 
