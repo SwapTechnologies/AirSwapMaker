@@ -1,5 +1,4 @@
 import { Injectable } from '@angular/core';
-import { validatedTokens } from './validatedTokens/validatedTokens';
 import { Token } from '../types/types';
 import { erc20ABI } from './erc20ABI';
 import { AirswapService } from './airswap.service';
