@@ -35,11 +35,27 @@ export class Erc20Service {
     this.tokenPath = path.join(userDataPath, 'erc20Tokens.json');
     try {
       this.tokens = JSON.parse(fs.readFileSync(this.tokenPath));
+      this.generateTokensTwins();
     } catch (error) {
-      fs.writeFileSync(this.tokenPath, JSON.stringify(validatedTokens));
-      this.tokens = validatedTokens;
+      http.get('https://token-metadata.airswap.io/tokens')
+      .toPromise()
+      .then((result) => {
+        this.tokens = {};
+        for (const entry in result) {
+          if (result[entry]) {
+            const token = result[entry];
+            this.tokens[token.address] = {
+              address: token.address,
+              name: token.name,
+              symbol: token.symbol,
+              decimals: Number(token.decimals),
+            };
+          }
+        }
+        fs.writeFileSync(this.tokenPath, JSON.stringify(this.tokens));
+        this.generateTokensTwins();
+      });
     }
-    this.generateTokensTwins();
   }
 
   generateTokensTwins() {
