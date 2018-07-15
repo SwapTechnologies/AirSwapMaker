@@ -16,7 +16,7 @@ export class AirswapService {
     this.asProtocol = new AirSwap({
       privateKey: privateKey,
       infuraKey: this.infuraAPI,
-      networkId: 'rinkeby'
+      networkId: 'mainnet'
     });
     this.asProtocol.connect()
     .then((result) => {
