@@ -1,9 +1,9 @@
-const WebSocket = require('ws')
-const ethers = require('ethers')
-const erc20 = require('human-standard-token-abi')
-const exchange = require('./exchangeABI.json')
-const weth = require('./wethABI.json')
-const uuid = require('uuid4')
+const WebSocket = require('ws');
+const ethers = require('ethers');
+const erc20 = require('human-standard-token-abi');
+const exchange = require('./exchangeABI.json');
+const weth = require('./wethABI.json');
+const uuid = require('uuid4');
 
 const { Contract, Wallet, utils, providers } = ethers
 
@@ -258,19 +258,35 @@ class AirSwap {
     if (!Array.isArray(intents) || !makerAmount) {
       throw new Error('bad arguments passed to getOrders')
     }
-    return Promise.all(
-      intents.map(({ address, makerToken, takerToken }) => {
-        const payload = AirSwap.makeRPC('getOrder', {
-          makerToken,
-          takerToken,
-          takerAddress: this.wallet.address.toLowerCase(),
-          makerAmount: String(makerAmount),
-        })
-        // `Promise.all` will return a complete array of resolved promises, or just the first rejection if a promise fails.
-        // To mitigate this, we `catch` errors on individual promises so that `Promise.all` always returns a complete array
-        return new Promise((res, rej) => this.call(address, payload, res, rej)).catch(e => e)
-      }),
-    )
+    const promiseList = []
+    for (const intent of intents) {
+      const { address, makerToken, takerToken } = intent;
+      const payload = AirSwap.makeRPC('getOrder', {
+        makerToken,
+        takerToken,
+        takerAddress: this.wallet.address.toLowerCase(),
+        makerAmount: String(makerAmount),
+      })
+      promiseList.push(
+        new Promise((res, rej) => {
+          this.call(address, payload, res, rej)
+        }).catch(e => e)
+      )
+    }
+    return Promise.all(promiseList);
+    // return Promise.all(
+    //   intents.map(({ address, makerToken, takerToken }) => {
+    //     const payload = AirSwap.makeRPC('getOrder', {
+    //       makerToken,
+    //       takerToken,
+    //       takerAddress: this.wallet.address.toLowerCase(),
+    //       makerAmount: String(makerAmount),
+    //     })
+    //     // `Promise.all` will return a complete array of resolved promises, or just the first rejection if a promise fails.
+    //     // To mitigate this, we `catch` errors on individual promises so that `Promise.all` always returns a complete array
+    //     return new Promise((res, rej) => this.call(address, payload, res, rej)).catch(e => e)
+    //   }),
+    // )
   }
 
   // Interacting with Ethereum
@@ -349,7 +365,7 @@ class AirSwap {
         value: value ? utils.bigNumberify(String(value)) : utils.parseEther('0'),
         gasLimit,
         gasPrice,
-      },
+      }
     )
   }
 
@@ -372,7 +388,7 @@ class AirSwap {
     return tokenContract.approve(
       this.exchangeContract.address.toLowerCase(),
       '1000000000000000000000000000', // large approval amount so we don't have to approve ever again
-      { gasLimit, gasPrice },
+      { gasLimit, gasPrice }
     )
   }
 }
