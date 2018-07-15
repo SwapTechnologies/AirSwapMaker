@@ -1,11 +1,24 @@
 <div *ngIf="airswapService.intents.length > 0">
-  <button
-  mat-icon-button
-  color="primary"
-  matTooltip="Refresh Prices"
-  (click)="getUsdPrices()">
-    <mat-icon>autorenew</mat-icon>
-  </button>
+  <div class='progress-wrapper'>
+    <mat-progress-spinner
+    style='margin: 0 auto;'
+    color="primary"
+    [diameter]='68'
+    mode="determinate"
+    [value]="updateCountdown">
+    </mat-progress-spinner>
+
+    <div class="iconContainer">
+      <button
+      mat-icon-button
+      color="primary"
+      matTooltip="Refresh Prices"
+      (click)="getUsdPrices()">
+        <mat-icon>autorenew</mat-icon>
+      </button>
+    </div>
+  </div>
+
   <div *ngFor="let intent of airswapService.intents">
     <div *ngIf="intent.makerProps && intent.takerProps">
       <mat-form-field class="priceInput">

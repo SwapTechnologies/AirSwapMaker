@@ -1,17 +1,23 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { AirswapService } from '../../services/airswap.service';
 import { Erc20Service } from '../../services/erc20.service';
 import { PriceService } from '../../services/price.service';
+
+import { TimerObservable } from 'rxjs/observable/TimerObservable';
 
 @Component({
   selector: 'app-price',
   templateUrl: './price.component.html',
   styleUrls: ['./price.component.scss']
 })
-export class PriceComponent implements OnInit {
+export class PriceComponent implements OnInit, OnDestroy {
 
   public enteredPrices = {};
   public usdPrices = {};
+
+  public updateCountdown = 100;
+  public priceUpdater;
+
   constructor(
     public airswapService: AirswapService,
     public erc20Service: Erc20Service,
@@ -35,12 +41,25 @@ export class PriceComponent implements OnInit {
           }
         }
       }
-      this.getUsdPrices();
+      this.priceUpdater = TimerObservable.create(0, 100)
+      .subscribe( () => {
+        this.updateCountdown = this.updateCountdown + 100 / 30000 * 100;
+        if (this.updateCountdown >= 100) {
+          this.getUsdPrices();
+        }
+      });
       this.priceService.setPricingLogic();
     });
   }
 
+  ngOnDestroy() {
+    if (this.priceUpdater) {
+      this.priceUpdater.unsubscribe();
+    }
+  }
+
   getUsdPrices(): Promise<any> {
+    this.updateCountdown = 0;
     const tokenSymbolList = [];
     for (const intent of this.airswapService.intents) {
       if (intent.makerProps && intent.takerProps) {

@@ -3,3 +3,18 @@
   margin-top: 10px;
   margin-bottom: 10px;
 }
+
+.progress-wrapper {
+  position: relative;
+  margin: 20px auto;
+  font-size: 20px;
+
+  .iconContainer {
+    position: absolute;
+
+    top: 50%;
+    bottom: auto;
+    left: 50%;
+    transform: translateY(-50%) translateX(-50%);
+  }
+}
