@@ -148,4 +148,8 @@ export class PriceComponent implements OnInit, OnDestroy {
     }
   }
 
+  showOptions(makerProps: any, takerProps: any) {
+    //
+  }
+
 }

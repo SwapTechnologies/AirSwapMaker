@@ -82,6 +82,18 @@
         )">
           <mat-icon>fast_forward</mat-icon>
         </button>
+        <button
+        mat-icon-button
+        matSuffix
+        matTooltip='Show Options'
+        color="primary"
+        aria-label="Show Options"
+        (click)="showOptions(
+          intent.makerProps,
+          intent.takerProps">
+          <mat-icon>more_vert</mat-icon>
+        </button>
+
       </mat-form-field>
     </div>
   </div>

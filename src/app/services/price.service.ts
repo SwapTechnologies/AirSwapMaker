@@ -56,7 +56,7 @@ export class PriceService {
       // pricing logic
       if (this.limitPrices[makerToken] && this.limitPrices[makerToken][takerToken]) {
         if (makerAmount) {
-          if (makerAmount > this.balances[makerToken]) {
+          if (Number(makerAmount) > this.balances[makerToken]) {
             return;
           }
           answerTakerAmount = this.erc20Service.toFixed(
@@ -69,7 +69,7 @@ export class PriceService {
           answerMakerAmount = this.erc20Service.toFixed(
             takerAmount / this.limitPrices[makerToken][takerToken]
           );
-          if (answerMakerAmount > this.balances[makerToken]) {
+          if (Number(answerMakerAmount) > this.balances[makerToken]) {
             return;
           }
           this.logsService.addLog('Answering to buy for  ' +
