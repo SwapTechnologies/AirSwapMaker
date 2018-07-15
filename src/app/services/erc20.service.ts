@@ -15,12 +15,14 @@ const electron = require('electron');
 export class Erc20Service {
 
   public tokens = {};
+  public userTokens = {};
+
   public tokensByName = {};
   public tokensBySymbol = {};
   public tokenList = [];
 
 
-  public tokenPath: string;
+  public userTokenPath: string;
   public customTokens = [];
   public erc20ABI = erc20ABI;
   public EtherAddress = '0x0000000000000000000000000000000000000000';
@@ -30,31 +32,38 @@ export class Erc20Service {
     public web3Service: Web3Service,
     private http: HttpClient
   ) {
-    const userDataPath = (electron.app || electron.remote.app).getPath('userData');
-    this.tokenPath = path.join(userDataPath, 'erc20Tokens.json');
-    try {
-      this.tokens = JSON.parse(fs.readFileSync(this.tokenPath));
-      this.generateTokensTwins();
-    } catch (error) {
-      http.get('https://token-metadata.airswap.io/tokens')
-      .toPromise()
-      .then((result) => {
-        this.tokens = {};
-        for (const entry in result) {
-          if (result[entry]) {
-            const token = result[entry];
-            this.tokens[token.address] = {
-              address: token.address,
-              name: token.name,
-              symbol: token.symbol,
-              decimals: Number(token.decimals),
-            };
+    // read ast metadata on first load up
+    http.get('https://token-metadata.airswap.io/tokens')
+    .toPromise()
+    .then((result) => {
+      this.tokens = {};
+      for (const entry in result) {
+        if (result[entry]) {
+          const token = result[entry];
+          this.tokens[token.address] = {
+            address: token.address,
+            name: token.name,
+            symbol: token.symbol,
+            decimals: Number(token.decimals),
+          };
+        }
+      }
+
+      // check for user tokens
+      const userDataPath = (electron.app || electron.remote.app).getPath('userData');
+      this.userTokenPath = path.join(userDataPath, 'userErc20Tokens.json');
+      try {
+        this.userTokens = JSON.parse(fs.readFileSync(this.userTokenPath));
+        for (const token in this.userTokens) {
+          if (this.userTokens[token]) {
+            this.tokens[token] = this.userTokens[token];
           }
         }
-        fs.writeFileSync(this.tokenPath, JSON.stringify(this.tokens));
-        this.generateTokensTwins();
-      });
-    }
+      } catch (error) {
+        // no user tokens
+      }
+      this.generateTokensTwins();
+    });
   }
 
   generateTokensTwins() {
@@ -93,8 +102,9 @@ export class Erc20Service {
 
   addToken(newToken: Token) {
     this.tokens[newToken.address] = newToken;
+    this.userTokens[newToken.address] = newToken;
     this.generateTokensTwins();
-    fs.writeFileSync(this.tokenPath, JSON.stringify(this.tokens));
+    fs.writeFileSync(this.userTokenPath, JSON.stringify(this.userTokens));
   }
 
   getContract(address): any {

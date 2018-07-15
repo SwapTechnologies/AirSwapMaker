@@ -78,7 +78,7 @@ export class IntentsComponent implements OnInit {
 
   getAstBalance() {
     this.erc20Service.balance(
-      this.erc20Service.getTokenByName('AirSwap Token').address,
+      '0x27054b13b1b798b345b591a4d22e6562d47ea75a',
       this.airswapService.asProtocol.wallet.address
     ).then(balance => {
       this.astBalance = balance / 1e4;
