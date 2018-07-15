@@ -37,7 +37,6 @@ export class PriceService {
         return;
       }
 
-      console.log(makerAmount, takerAmount);
       if (makerAmount) {
         this.logsService.addLog('Received order request from ' + takerAddress +
           ' to buy ' + makerAmount * (10 ** (-makerProps.decimals)) +
@@ -71,7 +70,6 @@ export class PriceService {
 
         const expiration = Math.round(new Date().getTime() / 1000) + 300;
         const nonce = String((Math.random() * 100000).toFixed());
-        console.log(answerMakerAmount, answerTakerAmount);
         const signedOrder = this.airswapService.asProtocol.signOrder({
           makerAddress: this.airswapService.asProtocol.wallet.address.toLowerCase(),
           makerAmount: answerMakerAmount.toString(),
