@@ -43,7 +43,9 @@
   <mat-card class='balances'>
     <div><i>Your Balances</i></div>
     <div *ngFor="let token of objectKeys(priceService.balances)">
-      {{priceService.balances[token] / tokenProps[token].powerDecimals | number: '1.1-8'}} {{tokenProps[token].symbol}}
+      <span *ngIf="priceService.balances[token] && tokenProps[token]">
+        {{priceService.balances[token] / tokenProps[token].powerDecimals | number: '1.1-8'}} {{tokenProps[token].symbol}}
+      </span>
     </div>
   </mat-card>
 

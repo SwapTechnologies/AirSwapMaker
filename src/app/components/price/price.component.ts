@@ -88,14 +88,12 @@ export class PriceComponent implements OnInit, OnDestroy {
   getBalances(): Promise<any> {
     const promiseList = [];
     for (const token of this.tokenList) {
-      if (!this.priceService.balances[token]) {
-        promiseList.push(
-          this.erc20Service.balance(token, this.airswapService.asProtocol.wallet.address)
-          .then((balance) => {
-            this.priceService.balances[token] = balance;
-          })
-        );
-      }
+      promiseList.push(
+        this.erc20Service.balance(token, this.airswapService.asProtocol.wallet.address)
+        .then((balance) => {
+          this.priceService.balances[token] = balance;
+        })
+      );
     }
     return Promise.all(promiseList);
   }
