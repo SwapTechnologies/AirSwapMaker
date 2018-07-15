@@ -18,11 +18,15 @@ export class PriceComponent implements OnInit, OnDestroy {
   public updateCountdown = 100;
   public priceUpdater;
 
+  public enteredExpiration: number;
+
   constructor(
     public airswapService: AirswapService,
     public erc20Service: Erc20Service,
     public priceService: PriceService,
-  ) { }
+  ) {
+    this.enteredExpiration = Math.floor(this.priceService.expirationTime / 60);
+  }
 
   ngOnInit() {
     this.airswapService.getIntents()
@@ -30,14 +34,19 @@ export class PriceComponent implements OnInit, OnDestroy {
       for (const intent of this.airswapService.intents) {
         const makerProps = this.erc20Service.getToken(intent.makerToken.toLowerCase());
         const takerProps = this.erc20Service.getToken(intent.takerToken.toLowerCase());
-        intent.makerProps = makerProps;
-        intent.takerProps = takerProps;
-        if (intent.makerProps && intent.takerProps) {
-          if (this.priceService.limitPrices[makerProps.address] &&
-            this.priceService.limitPrices[makerProps.address][takerProps.address]) {
-            this.enteredPrices[makerProps.address + takerProps.address] =
-              this.priceService.limitPrices[makerProps.address][takerProps.address]
-              * 10 ** (makerProps.decimals - takerProps.decimals);
+        if (makerProps && takerProps) {
+          intent.makerProps = makerProps;
+          intent.takerProps = takerProps;
+          intent.makerDecimals = 10 ** makerProps.decimals;
+          intent.takerDecimals = 10 ** takerProps.decimals;
+
+          if (intent.makerProps && intent.takerProps) {
+            if (this.priceService.limitPrices[makerProps.address] &&
+              this.priceService.limitPrices[makerProps.address][takerProps.address]) {
+              this.enteredPrices[makerProps.address + takerProps.address] =
+                this.priceService.limitPrices[makerProps.address][takerProps.address]
+                * 10 ** (makerProps.decimals - takerProps.decimals);
+            }
           }
         }
       }
@@ -102,5 +111,10 @@ export class PriceComponent implements OnInit, OnDestroy {
     }
   }
 
+  setExpiration() {
+    if (this.enteredExpiration > 0) {
+      this.priceService.expirationTime = Math.floor(this.enteredExpiration * 60);
+    }
+  }
 
 }

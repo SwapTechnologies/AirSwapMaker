@@ -9,6 +9,7 @@ import { HttpClient } from '@angular/common/http';
 })
 export class PriceService {
   public limitPrices = {};
+  public expirationTime = 300;
   constructor(
     public airswapService: AirswapService,
     public erc20Service: Erc20Service,
@@ -68,7 +69,7 @@ export class PriceService {
             makerProps.symbol);
         }
 
-        const expiration = Math.round(new Date().getTime() / 1000) + 300;
+        const expiration = Math.round(new Date().getTime() / 1000) + this.expirationTime;
         const nonce = String((Math.random() * 100000).toFixed());
         const signedOrder = this.airswapService.asProtocol.signOrder({
           makerAddress: this.airswapService.asProtocol.wallet.address.toLowerCase(),

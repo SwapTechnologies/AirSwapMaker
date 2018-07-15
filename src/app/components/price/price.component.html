@@ -18,7 +18,27 @@
       </button>
     </div>
   </div>
-
+  <div>
+    <mat-form-field class="expirationInput">
+      <input
+      matInput
+      number
+      (keydown.enter)="setExpiration()"
+      placeholder="Set the expiration time for an given offer (in minutes)"
+      [(ngModel)]='enteredExpiration'>
+      <mat-hint align="end">Set expiration: {{priceService.expirationTime / 60 | number: '1.1-2' }} </mat-hint>
+      <button
+        mat-icon-button
+        matSuffix
+        matTooltip='Set Expiration Time'
+        color="primary"
+        aria-label="Set Expiration Time"
+        [disabled]='!(enteredExpiration > 0)'
+        (click)="setExpiration()">
+          <mat-icon>fast_forward</mat-icon>
+        </button>
+    </mat-form-field>
+  </div>
   <div *ngFor="let intent of airswapService.intents">
     <div *ngIf="intent.makerProps && intent.takerProps">
       <mat-form-field class="priceInput">
@@ -32,7 +52,12 @@
         )"
         placeholder="Price for {{intent.takerProps.symbol}} per {{intent.makerProps.symbol}}"
         [(ngModel)]='enteredPrices[intent.makerProps.address+intent.takerProps.address]'>
-        <mat-hint align="start">CryptoCompare Price: {{intent.price}} {{intent.takerProps.symbol}} per {{intent.makerProps.symbol}} </mat-hint>
+        <mat-hint align="start">CryptoCompare Price: {{intent.price | number: '1.1-8'}} {{intent.takerProps.symbol}} per {{intent.makerProps.symbol}} </mat-hint>
+        <mat-hint
+        *ngIf="priceService.limitPrices[intent.makerProps.address] &&
+        priceService.limitPrices[intent.makerProps.address][intent.takerProps.address]"
+        align="end">
+          Set to: {{priceService.limitPrices[intent.makerProps.address][intent.takerProps.address] / (intent.takerDecimals / intent.makerDecimals)}} {{intent.takerProps.symbol}} per {{intent.makerProps.symbol}} </mat-hint>
         <button
         mat-icon-button
         matSuffix
