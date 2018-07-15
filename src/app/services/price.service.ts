@@ -9,6 +9,7 @@ import { HttpClient } from '@angular/common/http';
 })
 export class PriceService {
   public limitPrices = {};
+  public balances = {};
   public expirationTime = 300;
   constructor(
     public airswapService: AirswapService,

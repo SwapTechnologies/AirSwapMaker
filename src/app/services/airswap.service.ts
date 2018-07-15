@@ -20,7 +20,6 @@ export class AirswapService {
     });
     this.asProtocol.connect()
     .then((result) => {
-      console.log(result);
       this.connected = true;
       this.getIntents();
     }).catch((error) => {

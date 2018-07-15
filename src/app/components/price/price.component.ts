@@ -14,11 +14,15 @@ export class PriceComponent implements OnInit, OnDestroy {
 
   public enteredPrices = {};
   public usdPrices = {};
+  public tokenProps = {};
+
+  public tokenList = [];
 
   public updateCountdown = 100;
   public priceUpdater;
 
   public enteredExpiration: number;
+  objectKeys = Object.keys;
 
   constructor(
     public airswapService: AirswapService,
@@ -31,22 +35,31 @@ export class PriceComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.airswapService.getIntents()
     .then(() => {
+      this.tokenList = [];
+
       for (const intent of this.airswapService.intents) {
         const makerProps = this.erc20Service.getToken(intent.makerToken.toLowerCase());
         const takerProps = this.erc20Service.getToken(intent.takerToken.toLowerCase());
         if (makerProps && takerProps) {
           intent.makerProps = makerProps;
           intent.takerProps = takerProps;
-          intent.makerDecimals = 10 ** makerProps.decimals;
-          intent.takerDecimals = 10 ** takerProps.decimals;
+          intent.makerProps.powerDecimals = 10 ** makerProps.decimals;
+          intent.takerProps.powerDecimals = 10 ** takerProps.decimals;
 
-          if (intent.makerProps && intent.takerProps) {
-            if (this.priceService.limitPrices[makerProps.address] &&
-              this.priceService.limitPrices[makerProps.address][takerProps.address]) {
-              this.enteredPrices[makerProps.address + takerProps.address] =
-                this.priceService.limitPrices[makerProps.address][takerProps.address]
-                * 10 ** (makerProps.decimals - takerProps.decimals);
-            }
+          if (this.priceService.limitPrices[makerProps.address] &&
+            this.priceService.limitPrices[makerProps.address][takerProps.address]) {
+            this.enteredPrices[makerProps.address + takerProps.address] =
+              this.priceService.limitPrices[makerProps.address][takerProps.address]
+              * 10 ** (makerProps.decimals - takerProps.decimals);
+          }
+
+          if (!(this.tokenList.indexOf(intent.makerProps.address) >= 0)) {
+            this.tokenList.push(intent.makerProps.address);
+            this.tokenProps[intent.makerProps.address] = intent.makerProps;
+          }
+          if (!(this.tokenList.indexOf(intent.takerProps.address) >= 0)) {
+            this.tokenList.push(intent.takerProps.address);
+            this.tokenProps[intent.takerProps.address] = intent.takerProps;
           }
         }
       }
@@ -54,10 +67,15 @@ export class PriceComponent implements OnInit, OnDestroy {
       .subscribe( () => {
         this.updateCountdown = this.updateCountdown + 100 / 30000 * 100;
         if (this.updateCountdown >= 100) {
-          this.getUsdPrices();
+          const promiseList = [];
+          promiseList.push(this.getUsdPrices());
+          promiseList.push(this.getBalances());
+          Promise.all(promiseList)
+          .then(() => {
+            this.priceService.setPricingLogic();
+          });
         }
       });
-      this.priceService.setPricingLogic();
     });
   }
 
@@ -65,6 +83,21 @@ export class PriceComponent implements OnInit, OnDestroy {
     if (this.priceUpdater) {
       this.priceUpdater.unsubscribe();
     }
+  }
+
+  getBalances(): Promise<any> {
+    const promiseList = [];
+    for (const token of this.tokenList) {
+      if (!this.priceService.balances[token]) {
+        promiseList.push(
+          this.erc20Service.balance(token, this.airswapService.asProtocol.wallet.address)
+          .then((balance) => {
+            this.priceService.balances[token] = balance;
+          })
+        );
+      }
+    }
+    return Promise.all(promiseList);
   }
 
   getUsdPrices(): Promise<any> {
