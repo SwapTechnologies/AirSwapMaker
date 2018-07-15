@@ -19,6 +19,9 @@
     </button>
     <input hidden type="file" #keystoreFileInput (change)="loadKeystoreFile($event)"/>
   </div>
+  <div>
+    {{errorMessage}}
+  </div>
 </div>
 
 

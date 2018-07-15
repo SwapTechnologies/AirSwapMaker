@@ -14,6 +14,7 @@ import * as ethers from 'ethers';
 })
 export class AccountComponent implements OnInit {
 
+  public errorMessage = '';
   constructor(
     public airswapService: AirswapService,
     public dialog: MatDialog,
@@ -41,8 +42,7 @@ export class AccountComponent implements OnInit {
     const fileList: FileList = fileToLoadArray.files;
     if (fileList.length > 0) {
       const keystoreFile = fileList[0];
-      const dialogRef = this.dialog.open(DialogLoadKeystoreComponent, {
-      });
+      const dialogRef = this.dialog.open(DialogLoadKeystoreComponent);
 
       dialogRef.afterClosed().subscribe(result => {
         if (result) {
@@ -50,7 +50,10 @@ export class AccountComponent implements OnInit {
           const jsonData = JSON.parse(data);
           ethers.Wallet.fromEncryptedWallet(JSON.stringify(jsonData), result)
           .then(wallet => {
+            this.errorMessage = '';
             this.airswapService.connect(wallet.privateKey);
+          }).catch(error => {
+            this.errorMessage = 'Wallet decryption failed. Wrong password.';
           });
         }
       });
