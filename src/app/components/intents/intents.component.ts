@@ -2,6 +2,9 @@ import { Component, OnInit } from '@angular/core';
 import { Token } from '../../types/types';
 import { AirswapService } from '../../services/airswap.service';
 import { Erc20Service } from '../../services/erc20.service';
+import { MatDialog } from '@angular/material';
+import { AddTokenComponent } from '../../dialogs/add-token/add-token.component';
+
 @Component({
   selector: 'app-intents',
   templateUrl: './intents.component.html',
@@ -39,11 +42,12 @@ export class IntentsComponent implements OnInit {
   public balanceMakerToken: number;
   public balanceTakerToken: number;
 
-  public approveHashes: {};
+  public approveHashes = {};
 
   constructor(
     public airswapService: AirswapService,
     public erc20Service: Erc20Service,
+    public dialog: MatDialog,
   ) { }
 
   ngOnInit() {
@@ -74,7 +78,6 @@ export class IntentsComponent implements OnInit {
   }
 
   getAstBalance() {
-    console.log(this.erc20Service.getTokenByName('AirSwap Token'));
     this.erc20Service.balance(
       this.erc20Service.getTokenByName('AirSwap Token').address,
       this.airswapService.asProtocol.wallet.address
@@ -244,5 +247,19 @@ export class IntentsComponent implements OnInit {
   clearTakerTokenName(): void {
     this.takerTokenName = '';
     this.enteredTakerTokenName();
+  }
+
+  addToken(): void {
+    const dialogRef = this.dialog.open(AddTokenComponent, {
+      width: '500px'
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.filteredValidatedMakerTokens = this.erc20Service.tokenList;
+        this.filteredValidatedTakerTokens = this.erc20Service.tokenList;
+        this.initialize();
+      }
+    });
   }
 }

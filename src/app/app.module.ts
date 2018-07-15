@@ -38,6 +38,7 @@ import { PriceService } from './services/price.service';
 import { Web3Service } from './services/web3.service';
 import { DialogLoadKeystoreComponent } from './components/account/dialog-load-keystore/dialog-load-keystore.component';
 import { DialogEnterPrivateKeyComponent } from './components/account/dialog-enter-private-key/dialog-enter-private-key.component';
+import { AddTokenComponent } from './dialogs/add-token/add-token.component';
 
 // AoT requires an exported function for factories
 export function HttpLoaderFactory(http: HttpClient) {
@@ -56,7 +57,8 @@ export function HttpLoaderFactory(http: HttpClient) {
     RoundPipe,
     CallbackPipe,
     DialogLoadKeystoreComponent,
-    DialogEnterPrivateKeyComponent
+    DialogEnterPrivateKeyComponent,
+    AddTokenComponent
   ],
   imports: [
     BrowserModule,
@@ -85,6 +87,7 @@ export function HttpLoaderFactory(http: HttpClient) {
   entryComponents: [
     DialogEnterPrivateKeyComponent,
     DialogLoadKeystoreComponent,
+    AddTokenComponent,
   ],
   bootstrap: [AppComponent]
 })

@@ -31,6 +31,14 @@
         <div>
           <i>Your account holds {{astBalance}} AST and can set {{remainingIntents}} more intents</i>
         </div>
+
+        <button
+        mat-icon-button
+        color="primary"
+        matTooltip="Add a new token"
+        (click)="addToken()">
+          <mat-icon>add</mat-icon>
+        </button>
         <mat-form-field>
           <input
           type="text"
@@ -127,8 +135,8 @@
               for
               <ng-container *ngIf="intent.takerProps"> {{intent.takerProps.symbol}} </ng-container>
               <ng-container *ngIf="!intent.takerProps"> ??? </ng-container>
-              <mat-icon *ngIf="!intent.makerProps" matPrefix inline="true" matTooltip="Maker Token unknown to Database: {{intent.makerToken}}">help_outline</mat-icon>
-              <mat-icon *ngIf="!intent.takerProps" matPrefix inline="true" matTooltip="Taker Token unknown to Database: {{intent.takerToken}}">help_outline</mat-icon>
+              <mat-icon *ngIf="!intent.makerProps" matPrefix inline="true" matTooltip="Maker Token unknown: {{intent.makerToken}}">help_outline</mat-icon>
+              <mat-icon *ngIf="!intent.takerProps" matPrefix inline="true" matTooltip="Taker Token unknown: {{intent.takerToken}}">help_outline</mat-icon>
             </mat-list-option>
           </mat-selection-list>
         </div>
@@ -158,8 +166,8 @@
               (click)="approveMaker(token)">
                 APPROVE {{tokenSymbol(token)}}
               </button>
-              <span *ngIf="approveHashes[makerToken]">
-                Send Approval Tx: <a href='https://etherscan.io/tx/'{{approveHashes[makerToken]}} target='_blank'>Click</a>
+              <span *ngIf="approveHashes[token]">
+                Send Approval Tx: <a href='https://etherscan.io/tx/{{approveHashes[makerToken]}}' target='_blank'>{{approveHashes[makerToken]}}</a>
               </span>
             </mat-list-item>
           </mat-list>

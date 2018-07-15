@@ -43,7 +43,6 @@ export class Erc20Service {
   }
 
   generateTokensTwins() {
-    console.log('generating tokens twins.');
     this.tokensByName = {};
     this.tokensBySymbol = {};
     this.tokenList = [];
@@ -57,7 +56,7 @@ export class Erc20Service {
     }
   }
   getToken(address: string): Token {
-    const validToken = validatedTokens[address];
+    const validToken = this.tokens[address];
     if (validToken) {
       return validToken;
     } else {
@@ -77,28 +76,11 @@ export class Erc20Service {
     }
   }
 
-  isValidToken(address: string): boolean {
-    const validToken = validatedTokens[address];
-
-    if (validToken) {
-      return true;
-    } else {
-      return false;
-    }
+  addToken(newToken: Token) {
+    this.tokens[newToken.address] = newToken;
+    this.generateTokensTwins();
+    fs.writeFileSync(this.tokenPath, JSON.stringify(this.tokens));
   }
-
-  // getValidatedTokens(): Token[] {
-  //   this.validatedTokens = validatedTokens;
-  //   for (const token of this.validatedTokens) {
-  //     token.address = token.address.toLowerCase();
-  //   }
-  //   this.validatedTokens = this.validatedTokens.sort((a, b) => {
-  //     if (a.name.toLowerCase() < b.name.toLowerCase()) { return -1; }
-  //     if (a.name.toLowerCase() > b.name.toLowerCase()) { return 1; }
-  //     return 0;
-  //   });
-  //   return this.validatedTokens;
-  // }
 
   getContract(address): any {
     return new this.web3Service.web3.eth.Contract(
