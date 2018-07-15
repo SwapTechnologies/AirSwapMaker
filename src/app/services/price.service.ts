@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { AirswapService } from './airswap.service';
+import { LogsService } from './logs.service';
 import { Erc20Service } from './erc20.service';
 import { HttpClient } from '@angular/common/http';
 
@@ -11,6 +12,7 @@ export class PriceService {
   constructor(
     public airswapService: AirswapService,
     public erc20Service: Erc20Service,
+    private logsService: LogsService,
     private http: HttpClient
   ) { }
 
@@ -25,9 +27,26 @@ export class PriceService {
         takerToken,
       } = msg.params;
 
-      // Expiration in _seconds_ since the epoch (Solidity uses seconds not ms)
-      const expiration = Math.round(new Date().getTime() / 1000) + 300;
-      const nonce = String((Math.random() * 100000).toFixed());
+      if (!makerAmount && !takerAmount) {
+        return;
+      }
+
+      const makerProps = this.erc20Service.getToken(makerToken);
+      const takerProps = this.erc20Service.getToken(takerToken);
+      if (!makerProps || !takerProps) {
+        return;
+      }
+
+      console.log(makerAmount, takerAmount);
+      if (makerAmount) {
+        this.logsService.addLog('Received order request from ' + takerAddress +
+          ' to buy ' + makerAmount * (10 ** (-makerProps.decimals)) +
+          ' ' + makerProps.symbol + ' with ' + takerProps.symbol);
+      } else {
+        this.logsService.addLog('Received order request from ' + takerAddress +
+          ' to buy ' + makerProps.symbol + ' with ' +
+          takerAmount * (10 ** (-takerProps.decimals)) + ' ' + takerProps.symbol);
+      }
 
       let answerMakerAmount = makerAmount;
       let answerTakerAmount = takerAmount;
@@ -38,20 +57,27 @@ export class PriceService {
           answerTakerAmount = this.erc20Service.toFixed(
             this.limitPrices[makerToken][takerToken] * makerAmount
           );
-        } else if (takerAmount) {
+          this.logsService.addLog('Answering to sell for  ' +
+            answerTakerAmount * (10 ** (-takerProps.decimals)) + ' ' +
+            takerProps.symbol);
+        } else {
           answerMakerAmount = this.erc20Service.toFixed(
             takerAmount / this.limitPrices[makerToken][takerToken]
           );
-        } else {
-          return;
+          this.logsService.addLog('Answering to buy for  ' +
+            answerMakerAmount * (10 ** (-makerProps.decimals)) + ' ' +
+            makerProps.symbol);
         }
 
+        const expiration = Math.round(new Date().getTime() / 1000) + 300;
+        const nonce = String((Math.random() * 100000).toFixed());
+        console.log(answerMakerAmount, answerTakerAmount);
         const signedOrder = this.airswapService.asProtocol.signOrder({
           makerAddress: this.airswapService.asProtocol.wallet.address.toLowerCase(),
-          makerAmount: answerMakerAmount,
+          makerAmount: answerMakerAmount.toString(),
           makerToken,
           takerAddress,
-          takerAmount: answerTakerAmount,
+          takerAmount: answerTakerAmount.toString(),
           takerToken,
           expiration,
           nonce,
