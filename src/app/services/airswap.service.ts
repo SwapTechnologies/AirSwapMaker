@@ -53,4 +53,9 @@ export class AirswapService {
   get isAuthenticated(): boolean {
     return this.asProtocol.isAuthenticated;
   }
+
+  logout(): void {
+    this.asProtocol.disconnect();
+    this.connected = false;
+  }
 }

@@ -27,4 +27,11 @@
 
 <div *ngIf="airswapService.connected">
   You are connected as {{this.airswapService.getAccount()}}
+  <div>
+    <button
+    mat-button
+    (click)="logout()">
+      LOGOUT
+    </button>
+  </div>
 </div>
