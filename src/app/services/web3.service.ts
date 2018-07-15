@@ -24,7 +24,7 @@ export class Web3Service {
   }
 
   connectInfura() {
-    this._web3 = new Web3('https://rinkeby.infura.io/506w9CbDQR8fULSDR7H0');
+    this._web3 = new Web3('https://mainnet.infura.io/506w9CbDQR8fULSDR7H0');
   }
 
   getBalance(address) {
