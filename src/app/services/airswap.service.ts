@@ -1,6 +1,5 @@
 import { Injectable } from '@angular/core';
-
-// import * as AirSwap from './airswap/AirSwap.js';
+import * as AirSwap from './airswap/AirSwap.js';
 
 @Injectable({
   providedIn: 'root'
@@ -13,13 +12,12 @@ export class AirswapService {
   public intents = [];
   constructor() { }
 
-  connect(privateKey) {
-    console.log('connecting....');
-    // this.asProtocol = new AirSwap({
-    //   privateKey: privateKey,
-    //   infuraKey: this.infuraAPI,
-    //   networkId: 'rinkeby'
-    // });
+  connect(privateKey: string) {
+    this.asProtocol = new AirSwap({
+      privateKey: privateKey,
+      infuraKey: this.infuraAPI,
+      networkId: 'rinkeby'
+    });
     this.asProtocol.connect()
     .then((result) => {
       console.log(result);
