@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { MatDialog } from '@angular/material';
 
 import { DialogEnterPrivateKeyComponent } from './dialog-enter-private-key/dialog-enter-private-key.component';
@@ -13,6 +13,8 @@ import * as ethers from 'ethers';
   styleUrls: ['./account.component.scss']
 })
 export class AccountComponent implements OnInit {
+
+  @ViewChild('keystoreFileInput') inputKeystore;
 
   public errorMessage = '';
   constructor(
@@ -54,6 +56,7 @@ export class AccountComponent implements OnInit {
             this.airswapService.connect(wallet.privateKey);
           }).catch(error => {
             this.errorMessage = 'Wallet decryption failed. Wrong password.';
+            this.inputKeystore.nativeElement.value = '';
           });
         }
       });
