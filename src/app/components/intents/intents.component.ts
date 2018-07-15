@@ -204,6 +204,7 @@ export class IntentsComponent implements OnInit {
     const contract = this.erc20Service.getContract(makerToken);
     this.erc20Service.approve(makerToken)
     .then(result => {
+      console.log(result);
       this.approveHashes[makerToken] = result.hash;
     })
     .catch(error => {
