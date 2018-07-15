@@ -1,31 +1,32 @@
 import { Token } from '../../types/types';
 
-export const validatedTokens: Token[] = [
-  {
-      'address': '0xcc1cbd4f67cceb7c001bd4adf98451237a193ff8',
-      'name': 'AirSwap Token',
-      'symbol': 'AST',
-      'decimals': 4,
-  },
-  {
-      'address': '0x0000000000000000000000000000000000000000',
-      'name': 'Ether',
-      'symbol': 'ETH',
-      'decimals': 18,
-  },
-  {
-      'address': '0xbaEd6c1F8Cd4A443Cc372fd15D770e3764B4B2E7'.toLowerCase(),
-      'name': '0x',
-      'symbol': 'ZRX',
-      'decimals': 18,
-  },
-  {
-      'address': '0xf2a8C910676dB689BfD8a3735126B608BDc0D454'.toLowerCase(),
-      'name': 'Kyber',
-      'symbol': 'KNC',
-      'decimals': 18,
-  },
-];
+export const validatedTokens = {
+    '0xcc1cbd4f67cceb7c001bd4adf98451237a193ff8': {
+        'address': '0xcc1cbd4f67cceb7c001bd4adf98451237a193ff8',
+        'name': 'AirSwap Token',
+        'symbol': 'AST',
+        'decimals': 4,
+    },
+    '0x0000000000000000000000000000000000000000': {
+        'address': '0x0000000000000000000000000000000000000000',
+        'name': 'Ether',
+        'symbol': 'ETH',
+        'decimals': 18,
+    },
+    '0xbaed6c1f8cd4a443cc372fd15d770e3764b4b2e7':
+    {
+        'address': '0xbaed6c1f8cd4a443cc372fd15d770e3764b4b2e7',
+        'name': '0x',
+        'symbol': 'ZRX',
+        'decimals': 18,
+    },
+    '0xf2a8c910676db689bfd8a3735126b608bdc0d454': {
+        'address': '0xf2a8c910676db689bfd8a3735126b608bdc0d454',
+        'name': 'Kyber',
+        'symbol': 'KNC',
+        'decimals': 18,
+    }
+};
 
 //  [
 //   {

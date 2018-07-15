@@ -6,12 +6,23 @@ import { AirswapService } from './airswap.service';
 import { Web3Service } from './web3.service';
 import { HttpClient } from '@angular/common/http';
 
+const fs = require('fs');
+const path = require('path');
+const electron = require('electron');
+
 @Injectable({
   providedIn: 'root'
 })
 export class Erc20Service {
 
-  public validatedTokens = validatedTokens;
+  public tokens = {};
+  public tokensByName = {};
+  public tokensBySymbol = {};
+  public tokenList = [];
+
+
+  public tokenPath: string;
+  public customTokens = [];
   public erc20ABI = erc20ABI;
   public EtherAddress = '0x0000000000000000000000000000000000000000';
 
@@ -19,12 +30,34 @@ export class Erc20Service {
     public airswapService: AirswapService,
     public web3Service: Web3Service,
     private http: HttpClient
-  ) { }
+  ) {
+    const userDataPath = (electron.app || electron.remote.app).getPath('userData');
+    this.tokenPath = path.join(userDataPath, 'erc20Tokens.json');
+    try {
+      this.tokens = JSON.parse(fs.readFileSync(this.tokenPath));
+    } catch (error) {
+      fs.writeFileSync(this.tokenPath, JSON.stringify(validatedTokens));
+      this.tokens = validatedTokens;
+    }
+    this.generateTokensTwins();
+  }
 
+  generateTokensTwins() {
+    console.log('generating tokens twins.');
+    this.tokensByName = {};
+    this.tokensBySymbol = {};
+    this.tokenList = [];
+    for (const tokenAddress in this.tokens) {
+      if (this.tokens[tokenAddress]) {
+        const token = this.tokens[tokenAddress];
+        this.tokensByName[token.name.toLowerCase()] = token;
+        this.tokensBySymbol[token.symbol.toLowerCase()] = token;
+        this.tokenList.push(token);
+      }
+    }
+  }
   getToken(address: string): Token {
-    const validToken = validatedTokens.find(x => {
-      return x.address === address;
-    });
+    const validToken = validatedTokens[address];
     if (validToken) {
       return validToken;
     } else {
@@ -33,11 +66,10 @@ export class Erc20Service {
   }
 
   getTokenByName(name: string): Token {
-    const validToken = validatedTokens.find(x => {
-      return x.name.toLowerCase() === name.toLowerCase()
-             || x.symbol.toLowerCase() === name.toLowerCase();
-    });
-
+    let validToken = this.tokensByName[name.toLowerCase()];
+    if (!validToken) {
+      validToken = this.tokensBySymbol[name.toLowerCase()];
+    }
     if (validToken) {
       return validToken;
     } else {
@@ -46,9 +78,8 @@ export class Erc20Service {
   }
 
   isValidToken(address: string): boolean {
-    const validToken = validatedTokens.find(x => {
-      return x.address === address;
-    });
+    const validToken = validatedTokens[address];
+
     if (validToken) {
       return true;
     } else {
@@ -56,18 +87,18 @@ export class Erc20Service {
     }
   }
 
-  getValidatedTokens(): Token[] {
-    this.validatedTokens = validatedTokens;
-    for (const token of this.validatedTokens) {
-      token.address = token.address.toLowerCase();
-    }
-    this.validatedTokens = this.validatedTokens.sort((a, b) => {
-      if (a.name.toLowerCase() < b.name.toLowerCase()) { return -1; }
-      if (a.name.toLowerCase() > b.name.toLowerCase()) { return 1; }
-      return 0;
-    });
-    return this.validatedTokens;
-  }
+  // getValidatedTokens(): Token[] {
+  //   this.validatedTokens = validatedTokens;
+  //   for (const token of this.validatedTokens) {
+  //     token.address = token.address.toLowerCase();
+  //   }
+  //   this.validatedTokens = this.validatedTokens.sort((a, b) => {
+  //     if (a.name.toLowerCase() < b.name.toLowerCase()) { return -1; }
+  //     if (a.name.toLowerCase() > b.name.toLowerCase()) { return 1; }
+  //     return 0;
+  //   });
+  //   return this.validatedTokens;
+  // }
 
   getContract(address): any {
     return new this.web3Service.web3.eth.Contract(

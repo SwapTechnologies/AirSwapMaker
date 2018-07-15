@@ -27,8 +27,10 @@ export class IntentsComponent implements OnInit {
   public initialized = false;
 
   public makerTokenName;
+  public rawFilteredValidatedMakerTokens;
   public filteredValidatedMakerTokens;
   public takerTokenName;
+  public rawFilteredValidatedTakerTokens;
   public filteredValidatedTakerTokens;
 
   public makerDecimals: number;
@@ -45,8 +47,8 @@ export class IntentsComponent implements OnInit {
   ) { }
 
   ngOnInit() {
-    this.filteredValidatedMakerTokens = this.erc20Service.validatedTokens;
-    this.filteredValidatedTakerTokens = this.erc20Service.validatedTokens;
+    this.filteredValidatedMakerTokens = this.erc20Service.tokenList;
+    this.filteredValidatedTakerTokens = this.erc20Service.tokenList;
     this.initialize();
   }
 
@@ -72,6 +74,7 @@ export class IntentsComponent implements OnInit {
   }
 
   getAstBalance() {
+    console.log(this.erc20Service.getTokenByName('AirSwap Token'));
     this.erc20Service.balance(
       this.erc20Service.getTokenByName('AirSwap Token').address,
       this.airswapService.asProtocol.wallet.address
@@ -84,7 +87,7 @@ export class IntentsComponent implements OnInit {
   }
 
   enteredMakerTokenName(): void {
-    this.filteredValidatedMakerTokens = this.erc20Service.validatedTokens.filter(x => {
+    this.filteredValidatedMakerTokens = this.erc20Service.tokenList.filter(x => {
       return x.name.toLowerCase().includes(this.makerTokenName.toLowerCase())
       || x.symbol.toLowerCase().includes(this.makerTokenName.toLowerCase());
     });
@@ -98,7 +101,7 @@ export class IntentsComponent implements OnInit {
   }
 
   enteredTakerTokenName(): void {
-    this.filteredValidatedTakerTokens = this.erc20Service.validatedTokens.filter(x => {
+    this.filteredValidatedTakerTokens = this.erc20Service.tokenList.filter(x => {
       return x.name.toLowerCase().includes(this.takerTokenName.toLowerCase())
       || x.symbol.toLowerCase().includes(this.takerTokenName.toLowerCase());
     });
