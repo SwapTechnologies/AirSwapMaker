@@ -146,7 +146,8 @@ export class Erc20Service {
 
   approvedAmountAirSwap(contract: any): Promise<number> {
     return contract.methods
-    .allowance(this.airswapService.asProtocol.wallet.address, this.airswapService.asProtocol.exchangeContract.address)
+    .allowance(this.airswapService.asProtocol.wallet.address,
+               this.airswapService.asProtocol.exchangeContract.address)
     .call()
     .then(approvedAmount => approvedAmount);
   }

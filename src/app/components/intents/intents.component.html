@@ -167,7 +167,9 @@
                 APPROVE {{tokenSymbol(token)}}
               </button>
               <span *ngIf="approveHashes[token]">
-                Send Approval Tx: <a href='https://etherscan.io/tx/{{approveHashes[makerToken]}}' target='_blank'>{{approveHashes[makerToken]}}</a>
+                Send Approval Tx: <a href='https://etherscan.io/tx/{{approveHashes[makerToken]}}' target='_blank'>
+                  Goto: {{approveHashes[makerToken]}}
+                </a>
               </span>
             </mat-list-item>
           </mat-list>

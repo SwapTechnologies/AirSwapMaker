@@ -14,7 +14,6 @@ export class IntentsComponent implements OnInit {
   public makerToken: Token;
   public takerToken: Token;
 
-  public myIntents: any[] = [];
   public markedIntents = false;
   public intentsMarkedForRemoval: any;
 
@@ -83,8 +82,8 @@ export class IntentsComponent implements OnInit {
       this.airswapService.asProtocol.wallet.address
     ).then(balance => {
       this.astBalance = balance / 1e4;
-      this.balanceTooLow = this.astBalance - 250 * this.myIntents.length < 250;
-      this.remainingIntents = Math.floor((this.astBalance - 250 * this.myIntents.length) / 250);
+      this.balanceTooLow = this.astBalance - 250 * this.airswapService.intents.length < 250;
+      this.remainingIntents = Math.floor((this.astBalance - 250 * this.airswapService.intents.length) / 250);
       this.initialized = true;
     });
   }
