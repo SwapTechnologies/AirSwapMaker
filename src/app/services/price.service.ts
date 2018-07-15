@@ -28,6 +28,7 @@ export class PriceService {
         takerToken,
       } = msg.params;
 
+      console.log(msg);
       if (!makerAmount && !takerAmount) {
         return;
       }
