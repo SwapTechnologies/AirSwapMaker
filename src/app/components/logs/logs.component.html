@@ -1,5 +1,5 @@
-<div>
+<div class="logsContainer">
   <div *ngFor="let log of logsService.logs">
-    {{log}}
+    [{{log.time | date: 'short' }}]: {{log.message}}
   </div>
 </div>

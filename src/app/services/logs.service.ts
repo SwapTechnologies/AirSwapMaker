@@ -9,6 +9,9 @@ export class LogsService {
   constructor() { }
 
   addLog(message: string) {
-    this.logs.push(message);
+    this.logs.push({
+      time: Date.now(),
+      message: message
+    });
   }
 }
