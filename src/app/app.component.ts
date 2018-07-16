@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, HostListener } from '@angular/core';
 import { ElectronService } from './providers/electron.service';
 import { TranslateService } from '@ngx-translate/core';
 import { AppConfig } from '../environments/environment';
@@ -15,6 +15,13 @@ import { Web3Service } from './services/web3.service';
   styleUrls: ['./app.component.scss']
 })
 export class AppComponent {
+
+  @HostListener('window:beforeunload') exitApp() {
+    if (this.airswapService.connected) {
+      this.airswapService.storeIntentsToLocalFileAndClear();
+    }
+  }
+
   constructor(
     public electronService: ElectronService,
     private translate: TranslateService,
@@ -27,13 +34,15 @@ export class AppComponent {
 
     translate.setDefaultLang('en');
     // console.log('AppConfig', AppConfig);
-
+    console.log('Welcome to AirSwap Maker.');
     if (electronService.isElectron()) {
-      console.log('Mode electron');
+      console.log('You are running an Electron App.');
       // console.log('Electron ipcRenderer', electronService.ipcRenderer);
       // console.log('NodeJS childProcess', electronService.childProcess);
     } else {
-      console.log('Mode web');
+      console.log('You are running in Web mode.');
     }
+
+    this.airswapService.loadIntentsFromLocalFile(); // load local file of intents (still have to set them after log in to specific account)
   }
 }

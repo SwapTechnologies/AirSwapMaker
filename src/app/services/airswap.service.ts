@@ -1,6 +1,10 @@
 import { Injectable } from '@angular/core';
 import * as AirSwap from './airswap/AirSwap.js';
 
+const fs = require('fs');
+const path = require('path');
+const electron = require('electron');
+
 @Injectable({
   providedIn: 'root'
 })
@@ -10,6 +14,7 @@ export class AirswapService {
   public asProtocol: any;
   private infuraAPI = '506w9CbDQR8fULSDR7H0';
   public intents = [];
+  public locallyStoredIntents = {};
   constructor() { }
 
   connect(privateKey: string) {
@@ -21,7 +26,15 @@ export class AirswapService {
     this.asProtocol.connect()
     .then((result) => {
       this.connected = true;
-      this.getIntents();
+      const localIntents = this.locallyStoredIntents[this.asProtocol.wallet.address.toLowerCase()];
+      if (localIntents) {
+        this.setIntents(localIntents)
+        .then(() => {
+          this.getIntents(); // reload from indexer to be certain it's sync'd, sets the intents array
+        });
+      } else {
+        this.getIntents(); // no local file? check if there are intents set anyway
+      }
     }).catch((error) => {
       console.log('Error.');
     });
@@ -39,7 +52,15 @@ export class AirswapService {
 
   setIntents(intents): Promise<any> {
     if (this.connected) {
-      return this.asProtocol.setIntents(intents)
+      const intentList = [];
+      for (const intent of intents) {
+        intentList.push({
+          makerToken: intent.makerToken,
+          role: intent.role,
+          takerToken: intent.takerToken
+        });
+      }
+      return this.asProtocol.setIntents(intentList)
       .then(result => {
         return result;
       });
@@ -54,7 +75,37 @@ export class AirswapService {
   }
 
   logout(): void {
+    this.storeIntentsToLocalFileAndClear();
     this.asProtocol.disconnect();
     this.connected = false;
+  }
+
+  storeIntentsToLocalFileAndClear() {
+    // store current intents to local file
+    const userDataPath = (electron.app || electron.remote.app).getPath('userData');
+    const userIntentsPath = path.join(userDataPath, 'userIntents.json');
+    const intentList = [];
+    for (const intent of this.intents) {
+      intentList.push({
+        makerToken: intent.makerToken,
+        role: intent.role,
+        takerToken: intent.takerToken
+      });
+    }
+    this.locallyStoredIntents[this.asProtocol.wallet.address.toLowerCase()] = intentList;
+    fs.writeFileSync(userIntentsPath, JSON.stringify(this.locallyStoredIntents));
+    this.setIntents([]); // remove intents from indexer
+  }
+
+  loadIntentsFromLocalFile() {
+    // check if there are intents locally stored on start up
+    const userDataPath = (electron.app || electron.remote.app).getPath('userData');
+    const userIntentsPath = path.join(userDataPath, 'userIntents.json');
+    try {
+      const intents = JSON.parse(fs.readFileSync(userIntentsPath));
+      this.locallyStoredIntents = intents;
+    } catch (error) {
+      // no local intents found
+    }
   }
 }
