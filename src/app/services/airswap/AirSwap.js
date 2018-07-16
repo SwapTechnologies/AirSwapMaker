@@ -60,6 +60,8 @@ class AirSwap {
     // User defined methods that will be invoked by peers on the JSON-RPC
     this.RPC_METHOD_ACTIONS = rpcActions
 
+    this.CALL_ON_CLOSE = () => {};
+
     this.getOrders = this.getOrders.bind(this)
     this.fillOrder = this.fillOrder.bind(this)
   }
@@ -136,6 +138,7 @@ class AirSwap {
     this.socket.onclose = () => {
       this.isAuthenticated = false
       clearInterval(this.socket.interval)
+      this.CALL_ON_CLOSE()
       console.log('socket closed')
     }
 

@@ -18,7 +18,8 @@ export class AppComponent {
 
   @HostListener('window:beforeunload') exitApp() {
     if (this.airswapService.connected) {
-      this.airswapService.storeIntentsToLocalFileAndClear();
+      this.airswapService.storeIntentsToLocalFile();
+      this.airswapService.setIntents([]);
     }
   }
 

@@ -26,6 +26,7 @@ export class AirswapService {
     this.asProtocol.connect()
     .then((result) => {
       this.connected = true;
+      this.asProtocol.CALL_ON_CLOSE = this.onConnectionClose;
       const localIntents = this.locallyStoredIntents[this.asProtocol.wallet.address.toLowerCase()];
       if (localIntents) {
         this.setIntents(localIntents)
@@ -45,6 +46,7 @@ export class AirswapService {
       return this.asProtocol.getIntents()
       .then(result => {
         this.intents = result;
+        this.storeIntentsToLocalFile();
         return result;
       });
     }
@@ -62,6 +64,7 @@ export class AirswapService {
       }
       return this.asProtocol.setIntents(intentList)
       .then(result => {
+        this.storeIntentsToLocalFile();
         return result;
       });
     }
@@ -75,12 +78,17 @@ export class AirswapService {
   }
 
   logout(): void {
-    this.storeIntentsToLocalFileAndClear();
+    this.storeIntentsToLocalFile();
+    this.setIntents([]); // remove intents from indexer
+    this.onConnectionClose();
     this.asProtocol.disconnect();
+  }
+
+  onConnectionClose(): void {
     this.connected = false;
   }
 
-  storeIntentsToLocalFileAndClear() {
+  storeIntentsToLocalFile() {
     // store current intents to local file
     const userDataPath = (electron.app || electron.remote.app).getPath('userData');
     const userIntentsPath = path.join(userDataPath, 'userIntents.json');
@@ -94,7 +102,6 @@ export class AirswapService {
     }
     this.locallyStoredIntents[this.asProtocol.wallet.address.toLowerCase()] = intentList;
     fs.writeFileSync(userIntentsPath, JSON.stringify(this.locallyStoredIntents));
-    this.setIntents([]); // remove intents from indexer
   }
 
   loadIntentsFromLocalFile() {
