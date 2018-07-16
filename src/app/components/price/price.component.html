@@ -83,6 +83,18 @@
           <mat-icon>fast_forward</mat-icon>
         </button>
         <button
+          mat-icon-button
+          matSuffix
+          color="primary"
+          *ngIf="priceService.limitPrices[intent.makerProps.address] &&
+          priceService.limitPrices[intent.makerProps.address][intent.takerProps.address]"
+          matTooltip="Stop offering tokens"
+          (click)="removePrice(
+            intent.makerProps,
+            intent.takerProps)">
+          <mat-icon>clear</mat-icon>
+        </button>
+        <button
         mat-icon-button
         matSuffix
         matTooltip='Show Options'
