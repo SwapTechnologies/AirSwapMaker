@@ -15,8 +15,7 @@ Set your intents to the indexer, where every intent you want to set needs 250 AS
 Set at which price you want to offer the token.
 ![PriceWindow](./screenshot_price.png)
 
-And can then lean back and wait for orderRequests coming in from airswap.io/trade
-![LogsWindow](./screenshot_logs.png)
+And then you lean back and wait for orderRequests coming in from airswap.io/trade and being taken.
 
 
 
