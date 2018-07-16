@@ -6,6 +6,19 @@ Powered by
 # Introduction
 This is a app to run a market maker on AirSwap locally on your computer.
 
+You log in locally with your private key or keystore file (needs to be done, so you can automatically sign order requests).
+[![LoginWindow](./screenshot_login.png)]
+
+Set your intents to the indexer, where every intent you want to set needs 250 AST.
+[![IntentsWindow](./screenshot_intents.png)]
+
+Set at which price you want to offer the token.
+[![PriceWindow](./screenshot_price.png)]
+
+And can then lean back and wait for orderRequests coming in from airswap.io/trade
+[![LogsWindow](./screenshot_logs.png)]
+
+
 
 The project was bootstrapped with the repo https://github.com/maximegris/angular-electron.git .
 The versions are
