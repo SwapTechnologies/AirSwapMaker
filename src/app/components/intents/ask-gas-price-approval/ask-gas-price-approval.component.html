@@ -1,0 +1,20 @@
+<div>
+  <p style="font-style: italic;">
+    Set the gas price for the approval call.
+  </p>
+  <div>
+    <mat-form-field style="width: 100%;">
+      <input
+      matInput
+      placeholder="Gas Price (in GWei)"
+      [(ngModel)]="enteredGasPrice">
+    </mat-form-field>
+  </div>
+  <button
+  mat-raised-button
+  (click)="onCloseConfirm()"
+  color='primary'
+  [disabled]="!validPrice">
+    APPROVE
+  </button>
+</div>

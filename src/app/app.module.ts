@@ -39,6 +39,7 @@ import { Web3Service } from './services/web3.service';
 import { DialogLoadKeystoreComponent } from './components/account/dialog-load-keystore/dialog-load-keystore.component';
 import { DialogEnterPrivateKeyComponent } from './components/account/dialog-enter-private-key/dialog-enter-private-key.component';
 import { AddTokenComponent } from './dialogs/add-token/add-token.component';
+import { AskGasPriceApprovalComponent } from './components/intents/ask-gas-price-approval/ask-gas-price-approval.component';
 
 // AoT requires an exported function for factories
 export function HttpLoaderFactory(http: HttpClient) {
@@ -58,7 +59,8 @@ export function HttpLoaderFactory(http: HttpClient) {
     CallbackPipe,
     DialogLoadKeystoreComponent,
     DialogEnterPrivateKeyComponent,
-    AddTokenComponent
+    AddTokenComponent,
+    AskGasPriceApprovalComponent
   ],
   imports: [
     BrowserModule,
@@ -88,6 +90,7 @@ export function HttpLoaderFactory(http: HttpClient) {
     DialogEnterPrivateKeyComponent,
     DialogLoadKeystoreComponent,
     AddTokenComponent,
+    AskGasPriceApprovalComponent,
   ],
   bootstrap: [AppComponent]
 })

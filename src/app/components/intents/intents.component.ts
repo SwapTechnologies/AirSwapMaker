@@ -4,6 +4,7 @@ import { AirswapService } from '../../services/airswap.service';
 import { Erc20Service } from '../../services/erc20.service';
 import { MatDialog } from '@angular/material';
 import { AddTokenComponent } from '../../dialogs/add-token/add-token.component';
+import { AskGasPriceApprovalComponent } from './ask-gas-price-approval/ask-gas-price-approval.component';
 
 @Component({
   selector: 'app-intents',
@@ -148,7 +149,7 @@ export class IntentsComponent implements OnInit {
         this.airswapService.intents.push(intent);
         this.airswapService.setIntents(this.airswapService.intents)
         .then(() => {
-          this.getIntents();
+          this.initialize();
         });
       }
     }
@@ -175,7 +176,7 @@ export class IntentsComponent implements OnInit {
     this.markedIntents = false;
     this.airswapService.setIntents(newIntentList)
     .then(() => {
-      this.getIntents();
+      this.initialize();
     });
   }
 
@@ -193,6 +194,8 @@ export class IntentsComponent implements OnInit {
             && !this.unapprovedTokens.find(x => x === intent.makerToken) ) {
               this.unapprovedTokens.push(intent.makerToken);
             }
+          }).catch(error => {
+            console.log('Could not fetch the approval amount of ' + intent.makerToken);
           })
         );
       }
@@ -200,16 +203,24 @@ export class IntentsComponent implements OnInit {
   }
 
   approveMaker(makerToken: string): void {
-    this.clickedApprove[makerToken] = true;
-    const contract = this.erc20Service.getContract(makerToken);
-    this.erc20Service.approve(makerToken)
-    .then(result => {
-      console.log(result);
-      this.approveHashes[makerToken] = result.hash;
-    })
-    .catch(error => {
-      console.log('Approve failed.');
-      this.clickedApprove[makerToken] = false;
+    console.log(makerToken);
+    const dialogRef = this.dialog.open(AskGasPriceApprovalComponent, {
+      width: '500px'
+    });
+
+    dialogRef.afterClosed().subscribe(gasPrice => {
+      this.clickedApprove[makerToken] = true;
+      if (gasPrice) {
+        this.erc20Service.approve(makerToken, gasPrice)
+        .then(result => {
+          console.log(result);
+          this.approveHashes[makerToken] = result.hash;
+        })
+        .catch(error => {
+          console.log('Approve failed.');
+          this.clickedApprove[makerToken] = false;
+        });
+      }
     });
   }
 
