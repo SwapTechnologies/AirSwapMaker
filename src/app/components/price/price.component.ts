@@ -143,8 +143,9 @@ export class PriceComponent implements OnInit, OnDestroy {
   }
 
   removePrice(makerProps: any, takerProps: any) {
-    delete this.priceService.limitPrices[makerProps.address][takerProps.address];
+    this.priceService.removePriceOffer(makerProps.address, takerProps.address);
   }
+
   setExpiration() {
     if (this.enteredExpiration > 0) {
       this.priceService.expirationTime = Math.floor(this.enteredExpiration * 60);

@@ -11,6 +11,7 @@ export class PriceService {
   public limitPrices = {};
   public balances = {};
   public expirationTime = 300;
+
   constructor(
     public airswapService: AirswapService,
     public erc20Service: Erc20Service,
@@ -106,35 +107,6 @@ export class PriceService {
     });
   }
 
-  getPricesOfPair(tokenSymbol1: string, tokenSymbol2: string): Promise<any> {
-    return this.getPriceOfToken(tokenSymbol1 + ',' + tokenSymbol2)
-    .then(priceResult => {
-      if (priceResult) {
-        let priceMakerToken = priceResult[tokenSymbol1];
-        if (!priceMakerToken) {
-          priceMakerToken = 0;
-        } else {
-          priceMakerToken = priceMakerToken['USD'];
-        }
-        let priceTakerToken = priceResult[tokenSymbol2];
-        if (!priceTakerToken) {
-          priceTakerToken = 0;
-        } else {
-          priceTakerToken = priceTakerToken['USD'];
-        }
-        return {
-          makerToken: priceMakerToken,
-          takerToken: priceTakerToken
-        };
-      } else {
-        return {
-          makerToken: 0,
-          takerToken: 0
-        };
-      }
-    });
-  }
-
   getPricesOfList(tokenList: any): Promise<any> {
     let tokenString = tokenList[0];
     for (let i = 1; i < tokenList.length; ++i) {
@@ -155,5 +127,12 @@ export class PriceService {
       }
       return usdPrices;
     });
+  }
+
+  removePriceOffer(makerToken, takerToken) {
+    if (this.limitPrices[makerToken] &&
+      this.limitPrices[makerToken][takerToken]) {
+        delete this.limitPrices[makerToken][takerToken];
+      }
   }
 }

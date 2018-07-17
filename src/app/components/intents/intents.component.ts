@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { Token } from '../../types/types';
 import { AirswapService } from '../../services/airswap.service';
 import { Erc20Service } from '../../services/erc20.service';
+import { PriceService } from '../../services/price.service';
 import { MatDialog } from '@angular/material';
 import { AddTokenComponent } from '../../dialogs/add-token/add-token.component';
 import { AskGasPriceApprovalComponent } from './ask-gas-price-approval/ask-gas-price-approval.component';
@@ -47,6 +48,7 @@ export class IntentsComponent implements OnInit {
   constructor(
     public airswapService: AirswapService,
     public erc20Service: Erc20Service,
+    private priceService: PriceService,
     public dialog: MatDialog,
   ) { }
 
@@ -171,6 +173,7 @@ export class IntentsComponent implements OnInit {
       const idx = this.findIdxOfIntent(intent, newIntentList);
       if (idx >= 0) {
         newIntentList.splice( idx, 1 );
+        this.priceService.removePriceOffer(intent.makerToken, intent.takerToken);
       }
     }
     this.markedIntents = false;
