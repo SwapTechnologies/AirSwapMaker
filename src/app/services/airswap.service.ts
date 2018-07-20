@@ -1,6 +1,8 @@
 import { Injectable } from '@angular/core';
 import * as AirSwap from './airswap/AirSwap.js';
 
+import { AppConfig } from '../../environments/environment';
+
 const fs = require('fs');
 const path = require('path');
 const electron = require('electron');
@@ -21,7 +23,7 @@ export class AirswapService {
     this.asProtocol = new AirSwap({
       privateKey: privateKey,
       infuraKey: this.infuraAPI,
-      networkId: 'mainnet'
+      networkId: AppConfig.networkId,
     });
     this.asProtocol.connect()
     .then((result) => {
