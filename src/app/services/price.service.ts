@@ -12,6 +12,11 @@ export class PriceService {
   public balances = {};
   public expirationTime = 300;
 
+  public balancesLimits = {};
+  public balancesLiquidity = {};
+
+  public openOrders = {};
+
   constructor(
     public airswapService: AirswapService,
     public erc20Service: Erc20Service,
@@ -40,61 +45,85 @@ export class PriceService {
       if (!makerProps || !takerProps) {
         return;
       }
-
-      if (makerAmount) {
-        this.logsService.addLog('Received order request from ' + takerAddress +
-          ' to buy ' + makerAmount * (10 ** (-makerProps.decimals)) +
-          ' ' + makerProps.symbol + ' with ' + takerProps.symbol);
-      } else {
-        this.logsService.addLog('Received order request from ' + takerAddress +
-          ' to buy ' + makerProps.symbol + ' with ' +
-          takerAmount * (10 ** (-takerProps.decimals)) + ' ' + takerProps.symbol);
-      }
-
-      let answerMakerAmount = makerAmount;
-      let answerTakerAmount = takerAmount;
-
-      // pricing logic
-      if (this.limitPrices[makerToken] && this.limitPrices[makerToken][takerToken]) {
+      let takerMakerBalance = 0;
+      let takerTakerBalance = 0;
+      const promiseList = [];
+      Promise.all([
+        this.erc20Service.balance(makerToken, takerAddress)
+        .then((balance) => {
+          takerMakerBalance = balance;
+        }),
+        this.erc20Service.balance(takerToken, takerAddress)
+        .then((balance) => {
+          takerTakerBalance = balance;
+        })
+      ]).then(() => {
         if (makerAmount) {
-          if (Number(makerAmount) > this.balances[makerToken]) {
-            return;
-          }
-          answerTakerAmount = this.erc20Service.toFixed(
-            this.limitPrices[makerToken][takerToken] * makerAmount
-          );
-          this.logsService.addLog('Answering to sell for  ' +
-            answerTakerAmount * (10 ** (-takerProps.decimals)) + ' ' +
-            takerProps.symbol);
+          this.logsService.addLog('Received order request from ' + takerAddress +
+            ' to buy ' + makerAmount * (10 ** (-makerProps.decimals)) +
+            ' ' + makerProps.symbol + ' with ' + takerProps.symbol);
         } else {
-          answerMakerAmount = this.erc20Service.toFixed(
-            takerAmount / this.limitPrices[makerToken][takerToken]
-          );
-          if (Number(answerMakerAmount) > this.balances[makerToken]) {
-            return;
-          }
-          this.logsService.addLog('Answering to buy for  ' +
-            answerMakerAmount * (10 ** (-makerProps.decimals)) + ' ' +
-            makerProps.symbol);
+          this.logsService.addLog('Received order request from ' + takerAddress +
+            ' to buy ' + makerProps.symbol + ' with ' +
+            takerAmount * (10 ** (-takerProps.decimals)) + ' ' + takerProps.symbol);
         }
 
-        const expiration = Math.round(new Date().getTime() / 1000) + this.expirationTime;
-        const nonce = String((Math.random() * 100000).toFixed());
-        const signedOrder = this.airswapService.asProtocol.signOrder({
-          makerAddress: this.airswapService.asProtocol.wallet.address.toLowerCase(),
-          makerAmount: answerMakerAmount.toString(),
-          makerToken,
-          takerAddress,
-          takerAmount: answerTakerAmount.toString(),
-          takerToken,
-          expiration,
-          nonce,
-        });
-        this.airswapService.asProtocol.call(
-          takerAddress, // send order to address who requested it
-          { id: msg.id, jsonrpc: '2.0', result: signedOrder }, // response id should match their `msg.id`
-        );
-      }
+        let answerMakerAmount = makerAmount;
+        let answerTakerAmount = takerAmount;
+
+        // pricing logic
+        if (this.limitPrices[makerToken] && this.limitPrices[makerToken][takerToken]) {
+          if (makerAmount) {
+            // Taker wants to buy a number of makerToken
+            answerTakerAmount = this.erc20Service.toFixed(
+              this.limitPrices[makerToken][takerToken] * makerAmount
+            );
+            this.logsService.addLog('Answering to sell for  ' +
+              answerTakerAmount * (10 ** (-takerProps.decimals)) + ' ' +
+              takerProps.symbol);
+          } else {
+            // Taker wants to sell a number of takerToken
+            answerMakerAmount = this.erc20Service.toFixed(
+              takerAmount / this.limitPrices[makerToken][takerToken]
+            );
+            this.logsService.addLog('Answering to buy for  ' +
+              answerMakerAmount * (10 ** (-makerProps.decimals)) + ' ' +
+              makerProps.symbol);
+          }
+
+          // check if both parties have enough balance
+          if (takerTakerBalance < Number(answerTakerAmount)) {
+            this.logsService.addLog('Cancelled. Counterparty only has ' +
+              takerTakerBalance * (10 ** (-takerProps.decimals)) + ' ' +
+              takerProps.symbol);
+            return;
+          }
+
+          if (this.balances[makerToken] < Number(answerMakerAmount)) {
+            this.logsService.addLog('Cancelled. You only have  ' +
+            this.balances[makerToken] * (10 ** (-makerProps.decimals)) + ' ' +
+              makerProps.symbol);
+            return;
+          }
+
+          const expiration = Math.round(new Date().getTime() / 1000) + this.expirationTime;
+          const nonce = String((Math.random() * 100000).toFixed());
+          const signedOrder = this.airswapService.asProtocol.signOrder({
+            makerAddress: this.airswapService.asProtocol.wallet.address.toLowerCase(),
+            makerAmount: answerMakerAmount.toString(),
+            makerToken,
+            takerAddress,
+            takerAmount: answerTakerAmount.toString(),
+            takerToken,
+            expiration,
+            nonce,
+          });
+          this.airswapService.asProtocol.call(
+            takerAddress, // send order to address who requested it
+            { id: msg.id, jsonrpc: '2.0', result: signedOrder }, // response id should match their `msg.id`
+          );
+        }
+      });
     });
   }
 

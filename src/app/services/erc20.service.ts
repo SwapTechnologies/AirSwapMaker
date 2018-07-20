@@ -4,10 +4,13 @@ import { erc20ABI } from './erc20ABI';
 import { AirswapService } from './airswap.service';
 import { Web3Service } from './web3.service';
 import { HttpClient } from '@angular/common/http';
+import { AppConfig } from '../../environments/environment';
+
+import * as electron from 'electron';
 
 const fs = require('fs');
 const path = require('path');
-const electron = require('electron');
+
 
 @Injectable({
   providedIn: 'root'
@@ -21,6 +24,7 @@ export class Erc20Service {
   public tokensBySymbol = {};
   public tokenList = [];
 
+  public tokensInApprovalPending = {};
 
   public userTokenPath: string;
   public customTokens = [];
@@ -33,7 +37,7 @@ export class Erc20Service {
     private http: HttpClient
   ) {
     // read ast metadata on first load up
-    http.get('https://token-metadata.airswap.io/tokens')
+    http.get(AppConfig.tokenMetadata)
     .toPromise()
     .then((result) => {
       this.tokens = {};
@@ -195,6 +199,10 @@ export class Erc20Service {
         contractAddress,
         {
           gasPrice: gasPrice
+        }).then(result => {
+          const hash = result.hash;
+          this.tokensInApprovalPending[contractAddress] = hash;
+          return hash;
         });
     } else {
       return this.getGasPrice()
@@ -204,6 +212,11 @@ export class Erc20Service {
           {
             gasPrice: estimatedGasPrice
           });
+      }).then(result => {
+        console.log(result);
+        const hash = result.hash;
+        this.tokensInApprovalPending[contractAddress] = hash;
+        return hash;
       });
     }
   }

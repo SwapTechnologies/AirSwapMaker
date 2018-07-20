@@ -6,6 +6,9 @@ import { PriceService } from '../../services/price.service';
 import { MatDialog } from '@angular/material';
 import { AddTokenComponent } from '../../dialogs/add-token/add-token.component';
 import { AskGasPriceApprovalComponent } from './ask-gas-price-approval/ask-gas-price-approval.component';
+import { AppConfig } from '../../../environments/environment';
+
+import * as ethers from 'ethers';
 
 @Component({
   selector: 'app-intents',
@@ -20,12 +23,12 @@ export class IntentsComponent implements OnInit {
   public intentsMarkedForRemoval: any;
 
   public unapprovedTokens: any[] = [];
+  public clickedApprove = {};
 
   public astBalance = 0;
   public remainingIntents: number;
   public balanceTooLow = true;
 
-  public clickedApprove: any = {};
   public errorMessage = '';
   public showBuyButton = false;
   public initialized = false;
@@ -45,6 +48,8 @@ export class IntentsComponent implements OnInit {
 
   public approveHashes = {};
 
+  public provider;
+
   constructor(
     public airswapService: AirswapService,
     public erc20Service: Erc20Service,
@@ -53,17 +58,30 @@ export class IntentsComponent implements OnInit {
   ) { }
 
   ngOnInit() {
+    this.provider = ethers.providers.getDefaultProvider();
     this.filteredValidatedMakerTokens = this.erc20Service.tokenList;
     this.filteredValidatedTakerTokens = this.erc20Service.tokenList;
     this.initialize();
+    this.checkIfIntentsArePending();
   }
 
-  initialize() {
+  initialize(): void {
     this.getIntents();
     this.getAstBalance();
   }
 
-  getIntents() {
+  checkIfIntentsArePending(): void {
+    for (const token in this.erc20Service.tokensInApprovalPending) {
+      if (this.erc20Service.tokensInApprovalPending[token]) {
+        this.waitForApprovalTransaction(
+          token,
+          this.erc20Service.tokensInApprovalPending[token]
+        );
+      }
+    }
+  }
+
+  getIntents(): void {
     if (this.airswapService.connected && this.airswapService.isAuthenticated) {
       this.airswapService.getIntents()
       .then(() => {
@@ -79,9 +97,9 @@ export class IntentsComponent implements OnInit {
     }
   }
 
-  getAstBalance() {
+  getAstBalance(): void {
     this.erc20Service.balance(
-      '0x27054b13b1b798b345b591a4d22e6562d47ea75a',
+      AppConfig.astAddress,
       this.airswapService.asProtocol.wallet.address
     ).then(balance => {
       this.astBalance = balance / 1e4;
@@ -184,44 +202,56 @@ export class IntentsComponent implements OnInit {
   }
 
   checkApproval(): void {
-    const promiseList = [];
     this.unapprovedTokens = [];
     for (const intent of this.airswapService.intents) {
       if (intent.makerToken) {
         const contract = this.erc20Service.getContract(intent.makerToken);
-        this.clickedApprove[intent.makerToken] = false;
-        promiseList.push(
-          this.erc20Service.approvedAmountAirSwap(contract)
-          .then(approvedAmount => {
-            if (!(approvedAmount > 0)
-            && !this.unapprovedTokens.find(x => x === intent.makerToken) ) {
-              this.unapprovedTokens.push(intent.makerToken);
-            }
-          }).catch(error => {
-            console.log('Could not fetch the approval amount of ' + intent.makerToken);
-          })
-        );
+        this.erc20Service.approvedAmountAirSwap(contract)
+        .then(approvedAmount => {
+          if (!(approvedAmount > 0)
+              && !this.unapprovedTokens.find(x => x === intent.makerToken) ) {
+            this.unapprovedTokens.push(intent.makerToken);
+          }
+        }).catch(error => {
+          console.log('Could not fetch the approval amount of ' + intent.makerToken);
+        });
       }
     }
   }
 
+  waitForApprovalTransaction(token, hash): Promise<any> {
+    return this.provider.waitForTransaction(hash)
+    .then((transaction) => {
+      console.log('mined', transaction);
+      if (this.erc20Service.tokensInApprovalPending[token]) {
+        delete this.erc20Service.tokensInApprovalPending[token];
+      }
+      const index = this.unapprovedTokens.indexOf(token);
+      if (index > -1) {
+        this.unapprovedTokens.splice(index, 1);
+      }
+      if (this.clickedApprove[token]) {
+        delete this.clickedApprove[token];
+      }
+    }).catch(error => {
+      console.log('Approve failed.');
+      if (this.clickedApprove[token]) {
+        delete this.clickedApprove[token];
+      }
+    });
+  }
+
   approveMaker(makerToken: string): void {
-    console.log(makerToken);
     const dialogRef = this.dialog.open(AskGasPriceApprovalComponent, {
       width: '500px'
     });
 
     dialogRef.afterClosed().subscribe(gasPrice => {
-      this.clickedApprove[makerToken] = true;
       if (gasPrice) {
+        this.clickedApprove[makerToken] = true;
         this.erc20Service.approve(makerToken, gasPrice)
-        .then(result => {
-          console.log(result);
-          this.approveHashes[makerToken] = result.hash;
-        })
-        .catch(error => {
-          console.log('Approve failed.');
-          this.clickedApprove[makerToken] = false;
+        .then((hash) => {
+          return this.waitForApprovalTransaction(makerToken, hash);
         });
       }
     });
