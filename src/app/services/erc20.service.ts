@@ -1,7 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Token } from '../types/types';
 import { erc20ABI } from './erc20ABI';
-import { AirswapService } from './airswap.service';
 import { Web3Service } from './web3.service';
 import { HttpClient } from '@angular/common/http';
 import { AppConfig } from '../../environments/environment';
@@ -24,20 +23,17 @@ export class Erc20Service {
   public tokensBySymbol = {};
   public tokenList = [];
 
-  public tokensInApprovalPending = {};
-
   public userTokenPath: string;
   public customTokens = [];
   public erc20ABI = erc20ABI;
   public EtherAddress = '0x0000000000000000000000000000000000000000';
 
   constructor(
-    public airswapService: AirswapService,
     public web3Service: Web3Service,
     private http: HttpClient
   ) {
     // read ast metadata on first load up
-    http.get(AppConfig.tokenMetadata)
+    this.http.get(AppConfig.tokenMetadata)
     .toPromise()
     .then((result) => {
       this.tokens = {};
@@ -168,56 +164,8 @@ export class Erc20Service {
 
   approvedAmount(contract: any, spender): Promise<number> {
     return contract.methods
-    .allowance(this.airswapService.asProtocol.wallet.address, spender)
+    .allowance(this.web3Service.connectedAddress, spender)
     .call()
     .then(approvedAmount => approvedAmount);
-  }
-
-  approvedAmountAirSwap(contract: any): Promise<number> {
-    return contract.methods
-    .allowance(this.airswapService.asProtocol.wallet.address,
-               this.airswapService.asProtocol.exchangeContract.address)
-    .call()
-    .then(approvedAmount => approvedAmount);
-  }
-
-  getGasPrice(): Promise<any> {
-    let gasPrice = 10e9;
-    return this.http.get('https://ethgasstation.info/json/ethgasAPI.json')
-    .toPromise()
-    .then(ethGasStationResult => {
-      if (ethGasStationResult['average']) {
-        gasPrice = ethGasStationResult['average'] / 10 * 1e9;
-      }
-      return gasPrice;
-    });
-  }
-
-  approve(contractAddress, gasPrice?: number): Promise<any> {
-    if (gasPrice) {
-      return this.airswapService.asProtocol.approveTokenForTrade(
-        contractAddress,
-        {
-          gasPrice: gasPrice
-        }).then(result => {
-          const hash = result.hash;
-          this.tokensInApprovalPending[contractAddress] = hash;
-          return hash;
-        });
-    } else {
-      return this.getGasPrice()
-      .then(estimatedGasPrice => {
-        return this.airswapService.asProtocol.approveTokenForTrade(
-          contractAddress,
-          {
-            gasPrice: estimatedGasPrice
-          });
-      }).then(result => {
-        console.log(result);
-        const hash = result.hash;
-        this.tokensInApprovalPending[contractAddress] = hash;
-        return hash;
-      });
-    }
   }
 }

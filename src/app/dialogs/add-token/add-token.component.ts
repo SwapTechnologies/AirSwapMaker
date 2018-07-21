@@ -1,6 +1,7 @@
 import { Component, Inject, OnInit } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
 
+import { AirswapService } from '../../services/airswap.service';
 import { Erc20Service } from '../../services/erc20.service';
 import { Web3Service } from '../../services/web3.service';
 
@@ -23,6 +24,7 @@ export class AddTokenComponent implements OnInit {
   constructor(
     public dialogRef: MatDialogRef<AddTokenComponent>,
     @Inject(MAT_DIALOG_DATA) public data: any,
+    private airswapService: AirswapService,
     private erc20Service: Erc20Service,
     private web3Service: Web3Service,
   ) { }
@@ -95,7 +97,7 @@ export class AddTokenComponent implements OnInit {
         .catch(() => validToken = false)
       );
       promiseList.push(
-        this.erc20Service.approvedAmountAirSwap(contract)
+        this.airswapService.approvedAmountAirSwap(contract)
         .then(approvedAmount => this.tokenCanApprove = Number(approvedAmount) >= 0)
         .catch(() => validToken = false)
       );

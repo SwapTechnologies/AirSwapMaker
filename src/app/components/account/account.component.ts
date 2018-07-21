@@ -6,6 +6,7 @@ import { DialogLoadKeystoreComponent } from './dialog-load-keystore/dialog-load-
 import { AirswapService } from '../../services/airswap.service';
 import * as fs from 'fs';
 import * as ethers from 'ethers';
+import { Web3Service } from '../../services/web3.service';
 
 @Component({
   selector: 'app-account',
@@ -19,6 +20,7 @@ export class AccountComponent implements OnInit {
   public errorMessage = '';
   constructor(
     public airswapService: AirswapService,
+    public web3Service: Web3Service,
     public dialog: MatDialog,
   ) { }
 

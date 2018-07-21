@@ -162,13 +162,13 @@
           <mat-list>
             <mat-list-item *ngFor="let token of unapprovedTokens">
               <button mat-raised-button
-              [disabled]="erc20Service.tokensInApprovalPending[token] !== undefined || clickedApprove[token]"
+              [disabled]="airswapService.tokensInApprovalPending[token] !== undefined || clickedApprove[token]"
               (click)="approveMaker(token)">
                 APPROVE {{tokenSymbol(token)}}
               </button>
-              <span *ngIf="erc20Service.tokensInApprovalPending[token]">
-                Send Approval Tx: <a href='https://etherscan.io/tx/{{erc20Service.tokensInApprovalPending[token]}}' target='_blank'>
-                  <mat-icon>exit_to_app</mat-icon> {{erc20Service.tokensInApprovalPending[token]}}
+              <span *ngIf="airswapService.tokensInApprovalPending[token]">
+                Send Approval Tx: <a href='https://etherscan.io/tx/{{airswapService.tokensInApprovalPending[token]}}' target='_blank'>
+                  <mat-icon>exit_to_app</mat-icon> {{airswapService.tokensInApprovalPending[token]}}
                 </a>
               </span>
             </mat-list-item>

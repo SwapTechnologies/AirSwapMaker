@@ -71,11 +71,11 @@ export class IntentsComponent implements OnInit {
   }
 
   checkIfIntentsArePending(): void {
-    for (const token in this.erc20Service.tokensInApprovalPending) {
-      if (this.erc20Service.tokensInApprovalPending[token]) {
+    for (const token in this.airswapService.tokensInApprovalPending) {
+      if (this.airswapService.tokensInApprovalPending[token]) {
         this.waitForApprovalTransaction(
           token,
-          this.erc20Service.tokensInApprovalPending[token]
+          this.airswapService.tokensInApprovalPending[token]
         );
       }
     }
@@ -206,7 +206,7 @@ export class IntentsComponent implements OnInit {
     for (const intent of this.airswapService.intents) {
       if (intent.makerToken) {
         const contract = this.erc20Service.getContract(intent.makerToken);
-        this.erc20Service.approvedAmountAirSwap(contract)
+        this.airswapService.approvedAmountAirSwap(contract)
         .then(approvedAmount => {
           if (!(approvedAmount > 0)
               && !this.unapprovedTokens.find(x => x === intent.makerToken) ) {
@@ -223,8 +223,8 @@ export class IntentsComponent implements OnInit {
     return this.provider.waitForTransaction(hash)
     .then((transaction) => {
       console.log('mined', transaction);
-      if (this.erc20Service.tokensInApprovalPending[token]) {
-        delete this.erc20Service.tokensInApprovalPending[token];
+      if (this.airswapService.tokensInApprovalPending[token]) {
+        delete this.airswapService.tokensInApprovalPending[token];
       }
       const index = this.unapprovedTokens.indexOf(token);
       if (index > -1) {
@@ -249,7 +249,7 @@ export class IntentsComponent implements OnInit {
     dialogRef.afterClosed().subscribe(gasPrice => {
       if (gasPrice) {
         this.clickedApprove[makerToken] = true;
-        this.erc20Service.approve(makerToken, gasPrice)
+        this.airswapService.approve(makerToken, gasPrice)
         .then((hash) => {
           return this.waitForApprovalTransaction(makerToken, hash);
         });

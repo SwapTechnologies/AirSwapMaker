@@ -10,6 +10,9 @@ export class Web3Service {
 
   public _web3: any;
 
+  public connectedAddress: string;
+  public astDexAddress: string;
+
   constructor() { }
 
   get web3(): any {
