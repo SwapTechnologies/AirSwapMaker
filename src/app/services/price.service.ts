@@ -3,6 +3,7 @@ import { AirswapService } from './airswap.service';
 import { LogsService } from './logs.service';
 import { Erc20Service } from './erc20.service';
 import { HttpClient } from '@angular/common/http';
+import { TimerObservable } from 'rxjs/observable/TimerObservable';
 
 @Injectable({
   providedIn: 'root'
@@ -17,12 +18,33 @@ export class PriceService {
 
   public openOrders = {};
 
+  public usdPrices = {};
+
+  public updateCountdown = 100;
+  public priceUpdater;
+
   constructor(
     public airswapService: AirswapService,
     public erc20Service: Erc20Service,
     private logsService: LogsService,
     private http: HttpClient
-  ) { }
+  ) {
+    this.priceUpdater = TimerObservable.create(0, 100)
+    .subscribe( () => {
+      this.updateCountdown = this.updateCountdown + 100 / 30000 * 100;
+      if (this.updateCountdown >= 100) {
+        if (this.airswapService.connected) {
+          const promiseList = [];
+          promiseList.push(this.getUsdPrices());
+          promiseList.push(this.getBalances());
+          Promise.all(promiseList)
+          .then(() => {
+            this.setPricingLogic();
+          });
+        }
+      }
+    });
+  }
 
   setPricingLogic() {
     this.airswapService.asProtocol.RPC_METHOD_ACTIONS.getOrder = ((msg) => {
@@ -122,6 +144,27 @@ export class PriceService {
             takerAddress, // send order to address who requested it
             { id: msg.id, jsonrpc: '2.0', result: signedOrder }, // response id should match their `msg.id`
           );
+
+          if (!this.openOrders[makerToken]) {
+            this.openOrders[makerToken] = {};
+          }
+
+          const signature = signedOrder.v + signedOrder.r + signedOrder.s;
+          const expirationTimer = TimerObservable.create(0, 1000)
+          .subscribe( () => {
+            const currentTime = Math.round(new Date().getTime() / 1000);
+            // find a way to check if this transaction was taken and mined
+            if (currentTime > expiration) {
+              expirationTimer.unsubscribe();
+
+              if (this.openOrders[makerToken][signature]) {
+                delete this.openOrders[makerToken][signature];
+                this.updateBalances();
+              }
+            }
+          });
+          this.openOrders[makerToken][signature] = signedOrder;
+          this.updateBalances();
         }
       });
     });
@@ -164,4 +207,64 @@ export class PriceService {
         delete this.limitPrices[makerToken][takerToken];
       }
   }
+
+  getUsdPrices(): Promise<any> {
+    this.updateCountdown = 0;
+    const tokenSymbolList = [];
+    for (const intent of this.airswapService.intents) {
+      if (intent.makerProps && intent.takerProps) {
+        if (!(tokenSymbolList.indexOf(intent.makerProps.symbol) >= 0)) {
+          tokenSymbolList.push(intent.makerProps.symbol);
+        }
+        if (!(tokenSymbolList.indexOf(intent.takerProps.symbol) >= 0)) {
+          tokenSymbolList.push(intent.takerProps.symbol);
+        }
+      }
+    }
+
+    return this.getPricesOfList(tokenSymbolList)
+    .then((usdPrices) => {
+      this.usdPrices = usdPrices;
+      for (const intent of this.airswapService.intents) {
+        if (intent.makerProps && intent.takerProps) {
+          intent.price = this.usdPrices[intent.makerProps.symbol] / this.usdPrices[intent.takerProps.symbol];
+        }
+      }
+    });
+  }
+
+  getBalances(): Promise<any> {
+    const promiseList = [];
+    // for (const token of this.tokenList) {
+    for (const token of this.airswapService.tokenList) {
+      promiseList.push(
+        this.erc20Service.balance(token, this.airswapService.asProtocol.wallet.address)
+        .then((balance) => {
+          this.balances[token] = balance;
+        })
+      );
+    }
+    return Promise.all(promiseList).then(() => {
+      this.updateBalances();
+    });
+  }
+
+  updateBalances(): void {
+    for (const token of this.airswapService.tokenList) {
+      if (this.balancesLimits[token]) {
+        this.balancesLiquidity[token] = this.balancesLimits[token];
+      } else if (this.balances[token]) {
+        this.balancesLiquidity[token] = this.balances[token];
+      }
+      if (this.openOrders[token]) {
+        for (const signature in this.openOrders[token]) {
+          if (this.openOrders[token][signature]) {
+            this.balancesLiquidity[token] =
+              this.balancesLiquidity[token] - this.openOrders[token][signature].makerAmount;
+          }
+        }
+      }
+    }
+  }
+
 }

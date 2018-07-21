@@ -5,7 +5,7 @@
     color="primary"
     [diameter]='68'
     mode="determinate"
-    [value]="updateCountdown">
+    [value]="priceService.updateCountdown">
     </mat-progress-spinner>
 
     <div class="iconContainer">
@@ -13,7 +13,7 @@
       mat-icon-button
       color="primary"
       matTooltip="Refresh Balances & Prices"
-      (click)="getUsdPrices()">
+      (click)="refreshBalances()">
         <mat-icon>autorenew</mat-icon>
       </button>
     </div>
@@ -43,8 +43,17 @@
   <mat-card class='balances'>
     <div><i>Balances of Intents</i></div>
     <div *ngFor="let token of objectKeys(priceService.balances)">
-      <span *ngIf="priceService.balances[token] && tokenProps[token]">
-        {{priceService.balances[token] / tokenProps[token].powerDecimals | number: '1.1-8'}} {{tokenProps[token].symbol}}
+      <span *ngIf="priceService.balances[token] && airswapService.tokenProps[token]">
+        {{priceService.balances[token] / airswapService.tokenProps[token].powerDecimals | number: '1.1-8'}} {{airswapService.tokenProps[token].symbol}}
+      </span>
+    </div>
+  </mat-card>
+
+  <mat-card class='liquidBalances'>
+    <div><i>Liquid Balances</i></div>
+    <div *ngFor="let token of objectKeys(priceService.balancesLiquidity)">
+      <span *ngIf="priceService.balancesLiquidity[token] && airswapService.tokenProps[token]">
+        {{priceService.balancesLiquidity[token] / airswapService.tokenProps[token].powerDecimals | number: '1.1-8'}} {{airswapService.tokenProps[token].symbol}}
       </span>
     </div>
   </mat-card>
