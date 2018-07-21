@@ -9,6 +9,8 @@ import { LogsService } from './services/logs.service';
 import { PriceService } from './services/price.service';
 import { Web3Service } from './services/web3.service';
 
+import { RebalanceService } from './services/algorithms/rebalance.service';
+
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
@@ -30,7 +32,8 @@ export class AppComponent {
     private erc20Service: Erc20Service,
     private logsService: LogsService,
     private priceService: PriceService,
-    private web3Service: Web3Service
+    private web3Service: Web3Service,
+    private rebalanceService: RebalanceService
   ) {
 
     translate.setDefaultLang('en');

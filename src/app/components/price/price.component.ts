@@ -36,7 +36,9 @@ export class PriceComponent implements OnInit, OnDestroy {
         }
       }
     }
-    this.refreshBalances();
+    if (!this.priceService.algorithmRunning) {
+      this.priceService.startContinuousPriceBalanceUpdating();
+    }
   }
 
   ngOnDestroy() {

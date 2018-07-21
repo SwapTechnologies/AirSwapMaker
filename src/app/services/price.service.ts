@@ -19,31 +19,40 @@ export class PriceService {
   public openOrders = {};
 
   public usdPrices = {};
+  public usdPricesByToken = {};
 
   public updateCountdown = 100;
+
   public priceUpdater;
+  public algorithmRunning = false;
 
   constructor(
     public airswapService: AirswapService,
     public erc20Service: Erc20Service,
     private logsService: LogsService,
     private http: HttpClient
-  ) {
-    this.priceUpdater = TimerObservable.create(0, 100)
-    .subscribe( () => {
-      this.updateCountdown = this.updateCountdown + 100 / 30000 * 100;
-      if (this.updateCountdown >= 100) {
-        if (this.airswapService.connected) {
-          const promiseList = [];
-          promiseList.push(this.getUsdPrices());
-          promiseList.push(this.getBalances());
-          Promise.all(promiseList)
-          .then(() => {
-            this.setPricingLogic();
-          });
+  ) {}
+
+  startContinuousPriceBalanceUpdating() {
+    if (!this.priceUpdater) {
+      this.priceUpdater = TimerObservable.create(0, 100)
+      .subscribe( () => {
+        this.updateCountdown = this.updateCountdown + 100 / 30000 * 100;
+        if (this.updateCountdown >= 100) {
+          if (this.airswapService.connected) {
+            this.getBalancesAndPrices()
+            .then(() => {
+              this.setPricingLogic();
+            });
+          }
         }
-      }
-    });
+      });
+    }
+  }
+
+  stopContinuousPriceBalanceUpdating() {
+    this.priceUpdater.unsubscribe();
+    this.priceUpdater = null;
   }
 
   setPricingLogic() {
@@ -230,6 +239,9 @@ export class PriceService {
           intent.price = this.usdPrices[intent.makerProps.symbol] / this.usdPrices[intent.takerProps.symbol];
         }
       }
+      for (const token of this.airswapService.tokenList) {
+        this.usdPricesByToken[token] = this.usdPrices[this.airswapService.tokenProps[token].symbol];
+      }
     });
   }
 
@@ -259,12 +271,18 @@ export class PriceService {
       if (this.openOrders[token]) {
         for (const signature in this.openOrders[token]) {
           if (this.openOrders[token][signature]) {
-            this.balancesLiquidity[token] =
-              this.balancesLiquidity[token] - this.openOrders[token][signature].makerAmount;
+            this.balancesLiquidity[token] -= this.openOrders[token][signature].makerAmount;
           }
         }
       }
     }
+  }
+
+  getBalancesAndPrices(): Promise<any> {
+    const promiseList = [];
+    promiseList.push(this.getUsdPrices());
+    promiseList.push(this.getBalances());
+    return Promise.all(promiseList);
   }
 
 }

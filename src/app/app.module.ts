@@ -40,7 +40,9 @@ import { DialogLoadKeystoreComponent } from './components/account/dialog-load-ke
 import { DialogEnterPrivateKeyComponent } from './components/account/dialog-enter-private-key/dialog-enter-private-key.component';
 import { AddTokenComponent } from './dialogs/add-token/add-token.component';
 import { AskGasPriceApprovalComponent } from './components/intents/ask-gas-price-approval/ask-gas-price-approval.component';
+import { RebalanceComponent } from './components/rebalance/rebalance.component';
 
+import { RebalanceService } from './services/algorithms/rebalance.service';
 // AoT requires an exported function for factories
 export function HttpLoaderFactory(http: HttpClient) {
   return new TranslateHttpLoader(http, './assets/i18n/', '.json');
@@ -60,7 +62,8 @@ export function HttpLoaderFactory(http: HttpClient) {
     DialogLoadKeystoreComponent,
     DialogEnterPrivateKeyComponent,
     AddTokenComponent,
-    AskGasPriceApprovalComponent
+    AskGasPriceApprovalComponent,
+    RebalanceComponent
   ],
   imports: [
     BrowserModule,
@@ -84,7 +87,8 @@ export function HttpLoaderFactory(http: HttpClient) {
     Erc20Service,
     LogsService,
     PriceService,
-    Web3Service
+    Web3Service,
+    RebalanceService
   ],
   entryComponents: [
     DialogEnterPrivateKeyComponent,

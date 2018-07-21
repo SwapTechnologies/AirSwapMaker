@@ -1,0 +1,96 @@
+<p style='font-style: italic;'>
+  Run algorithm to rebalance your portfolio
+</p>
+
+
+<div *ngIf="airswapService.intents.length > 0">
+  <div>
+    <mat-form-field class="expirationInput">
+      <input
+      matInput
+      type='number'
+      (keydown.enter)="setExpiration()"
+      placeholder="Set the expiration time for an given offer (in minutes)"
+      [(ngModel)]='enteredExpiration'>
+      <mat-hint align="end">Set expiration: {{priceService.expirationTime / 60 | number: '1.1-2' }} </mat-hint>
+      <button
+        mat-icon-button
+        matSuffix
+        matTooltip='Set Expiration Time'
+        color="primary"
+        aria-label="Set Expiration Time"
+        [disabled]='!(enteredExpiration > 0)'
+        (click)="setExpiration()">
+          <mat-icon>fast_forward</mat-icon>
+        </button>
+    </mat-form-field>
+  </div>
+
+  <mat-card class='balances'>
+    <div><i>Balances of Intents</i></div>
+    <div *ngFor="let token of objectKeys(priceService.balances)">
+      <span *ngIf="priceService.balances[token] && airswapService.tokenProps[token]">
+        {{priceService.balances[token] / airswapService.tokenProps[token].powerDecimals | number: '1.1-8'}} {{airswapService.tokenProps[token].symbol}}
+      </span>
+    </div>
+  </mat-card>
+
+  <mat-card class='liquidBalances'>
+    <div><i>Liquid Balances</i></div>
+    <div *ngFor="let token of objectKeys(priceService.balancesLiquidity)">
+      <span *ngIf="priceService.balancesLiquidity[token] && airswapService.tokenProps[token]">
+        {{priceService.balancesLiquidity[token] / airswapService.tokenProps[token].powerDecimals | number: '1.1-8'}} {{airswapService.tokenProps[token].symbol}}
+      </span>
+    </div>
+  </mat-card>
+
+  <mat-list>
+    <mat-list-item *ngFor="let token of airswapService.tokenList">
+      {{airswapService.tokenProps[token].symbol}} &nbsp;
+      <span *ngIf="rebalanceService.currentFractions[token]">
+        {{rebalanceService.currentFractions[token] * 100 | number: '1.1-2'}}
+      </span> &nbsp; %
+      &nbsp;&nbsp;&nbsp;&nbsp;
+      <mat-form-field class="priceInput">
+        <input
+        matInput
+        type='number'
+        (keydown.enter)="setFraction(token)"
+        placeholder="Desired Fraction in %"
+        [(ngModel)]='enteredFractions[token]'>
+
+        <mat-hint
+        *ngIf="priceService.usdPricesByToken[token]"
+        align="start">CryptoCompare Price: {{priceService.usdPricesByToken[token] | number: '1.1-4'}} $
+        </mat-hint>
+
+        <mat-hint
+        *ngIf="rebalanceService.goalFractions[token]"
+        align="end">
+          Set to: {{rebalanceService.goalFractions[token] * 100}} %
+        </mat-hint>
+
+        <button
+        mat-icon-button
+        matSuffix
+        matTooltip='Set Fraction'
+        color="primary"
+        [disabled]='(enteredFractions[token] < 0 || enteredFractions[token] > 100)'
+        (click)="setFraction(token)"
+        aria-label='Set Fraction'>
+          <mat-icon>fast_forward</mat-icon>
+        </button>
+
+        <button
+          mat-icon-button
+          matSuffix
+          color="primary"
+          *ngIf="rebalanceService.goalFractions[token]"
+          matTooltip="Clear Entry"
+          (click)="removeFraction(token)">
+          <mat-icon>clear</mat-icon>
+        </button>
+      </mat-form-field>
+    </mat-list-item>
+  </mat-list>
+</div>
