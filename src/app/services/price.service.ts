@@ -31,7 +31,9 @@ export class PriceService {
     public erc20Service: Erc20Service,
     private logsService: LogsService,
     private http: HttpClient
-  ) {}
+  ) {
+    this.startContinuousPriceBalanceUpdating();
+  }
 
   startContinuousPriceBalanceUpdating() {
     if (!this.priceUpdater) {
@@ -53,6 +55,17 @@ export class PriceService {
   stopContinuousPriceBalanceUpdating() {
     this.priceUpdater.unsubscribe();
     this.priceUpdater = null;
+  }
+
+  startAlgorithm() {
+    if (this.priceUpdater) {
+      this.stopContinuousPriceBalanceUpdating();
+    }
+    this.algorithmRunning = true;
+  }
+
+  stopAlgorithm() {
+    this.algorithmRunning = false;
   }
 
   setPricingLogic() {
