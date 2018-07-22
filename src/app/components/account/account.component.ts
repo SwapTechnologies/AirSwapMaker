@@ -58,9 +58,9 @@ export class AccountComponent implements OnInit {
             this.airswapService.connect(wallet.privateKey);
           }).catch(error => {
             this.errorMessage = 'Wallet decryption failed. Wrong password.';
-            this.inputKeystore.nativeElement.value = '';
           });
         }
+        this.inputKeystore.nativeElement.value = '';
       });
     }
   }
