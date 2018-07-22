@@ -25,6 +25,10 @@ export class PriceService {
 
   public priceUpdater;
   public algorithmRunning = false;
+  public blacklistAddress = {};
+
+  public algorithmCallbackOnUpdate = () => {};
+
 
   constructor(
     public airswapService: AirswapService,
@@ -41,9 +45,11 @@ export class PriceService {
       .subscribe( () => {
         this.updateCountdown = this.updateCountdown + 100 / 30000 * 100;
         if (this.updateCountdown >= 100) {
+          // if update countdown is at 100%, normally after 30s, refresh prices and your balances
           if (this.airswapService.connected) {
             this.getBalancesAndPrices()
             .then(() => {
+              this.updateBalances();
               this.setPricingLogic();
             });
           }
@@ -79,16 +85,29 @@ export class PriceService {
         takerToken,
       } = msg.params;
 
+      if (this.blacklistAddress[takerAddress]) {
+        // ignore blacklisted addresses
+        return;
+      }
       console.log(msg);
       if (!makerAmount && !takerAmount) {
+        // neither makerAmount nor takerAmount are set -> dont do anything.
+        return;
+      }
+      if (makerAmount && takerAmount) {
+        // both values are preset
+        // we don't do that here
         return;
       }
 
       const makerProps = this.erc20Service.getToken(makerToken);
       const takerProps = this.erc20Service.getToken(takerToken);
       if (!makerProps || !takerProps) {
+        // at least one of two tokens are not known to you -> don't do anything
         return;
       }
+
+      // get balances of the taker
       let takerMakerBalance = 0;
       let takerTakerBalance = 0;
       const promiseList = [];
@@ -102,6 +121,7 @@ export class PriceService {
           takerTakerBalance = balance;
         })
       ]).then(() => {
+        // with the tokens & balances known, start making a response
         if (makerAmount) {
           this.logsService.addLog('Received order request from ' + takerAddress +
             ' to buy ' + makerAmount * (10 ** (-makerProps.decimals)) +
@@ -112,11 +132,12 @@ export class PriceService {
             takerAmount * (10 ** (-takerProps.decimals)) + ' ' + takerProps.symbol);
         }
 
+        // one is undefined of the two and will be filled in the next step
         let answerMakerAmount = makerAmount;
         let answerTakerAmount = takerAmount;
 
         // pricing logic
-        if (this.limitPrices[makerToken] && this.limitPrices[makerToken][takerToken]) {
+        if (this.limitPrices[makerToken] && this.limitPrices[makerToken][takerToken]) { // check if a limit price is set for the token pair
           if (makerAmount) {
             // Taker wants to buy a number of makerToken
             answerTakerAmount = this.erc20Service.toFixed(
@@ -167,32 +188,40 @@ export class PriceService {
             { id: msg.id, jsonrpc: '2.0', result: signedOrder }, // response id should match their `msg.id`
           );
 
+          // store currently openOrder in a mapping for every maker Token
           if (!this.openOrders[makerToken]) {
             this.openOrders[makerToken] = {};
           }
-
           const signature = signedOrder.v + signedOrder.r + signedOrder.s;
           const expirationTimer = TimerObservable.create(0, 1000)
           .subscribe( () => {
             const currentTime = Math.round(new Date().getTime() / 1000);
             // find a way to check if this transaction was taken and mined
             if (currentTime > expiration) {
+              // when expiration timer is up, end the timer and delete the order
+              // update the balances and if a algorithm is running notify it
+              // that something may have updated
               expirationTimer.unsubscribe();
-
               if (this.openOrders[makerToken][signature]) {
                 delete this.openOrders[makerToken][signature];
-                this.updateBalances();
+                this.getBalancesAndPrices()
+                .then(() => {
+                  this.updateBalances(); // calculate the new liquid balances
+                  if (this.algorithmRunning) {
+                    this.algorithmCallbackOnUpdate();
+                  }
+                });
               }
             }
           });
           this.openOrders[makerToken][signature] = signedOrder;
-          this.updateBalances();
         }
       });
     });
   }
 
   getPriceOfToken(tokenSymbol: string): Promise<any> {
+    // http request to cryptocompare for current token prices
     return this.http.get(`https://min-api.cryptocompare.com/data/pricemulti?` +
     `fsyms=` + tokenSymbol + `&tsyms=USD`)
     .toPromise()
@@ -202,6 +231,9 @@ export class PriceService {
   }
 
   getPricesOfList(tokenList: any): Promise<any> {
+    // get prices for a bunch of cryptocurrencies in one call
+    // warning: limited to ~50 tokens atm from the cryptocompare side
+    // to do: consider case of > 50 tokens
     let tokenString = tokenList[0];
     for (let i = 1; i < tokenList.length; ++i) {
       const token = tokenList[i];
@@ -213,7 +245,7 @@ export class PriceService {
       for (const token of tokenList) {
         let priceToken = prices[token];
         if (!priceToken) {
-          priceToken = 0;
+          priceToken = null;
         } else {
           priceToken = priceToken['USD'];
         }
@@ -224,6 +256,7 @@ export class PriceService {
   }
 
   removePriceOffer(makerToken, takerToken) {
+    // function to remove answering requests of a certain token pair
     if (this.limitPrices[makerToken] &&
       this.limitPrices[makerToken][takerToken]) {
         delete this.limitPrices[makerToken][takerToken];
@@ -231,7 +264,9 @@ export class PriceService {
   }
 
   getUsdPrices(): Promise<any> {
-    this.updateCountdown = 0;
+    this.updateCountdown = 0; // reset timer in any case, try not to have too many api calls to cryptocompare
+
+    // make a list of all token symbols in the intents
     const tokenSymbolList = [];
     for (const intent of this.airswapService.intents) {
       if (intent.makerProps && intent.takerProps) {
@@ -247,13 +282,17 @@ export class PriceService {
     return this.getPricesOfList(tokenSymbolList)
     .then((usdPrices) => {
       this.usdPrices = usdPrices;
-      for (const intent of this.airswapService.intents) {
-        if (intent.makerProps && intent.takerProps) {
-          intent.price = this.usdPrices[intent.makerProps.symbol] / this.usdPrices[intent.takerProps.symbol];
-        }
-      }
+      // make a mapping token -> price for further use
       for (const token of this.airswapService.tokenList) {
         this.usdPricesByToken[token] = this.usdPrices[this.airswapService.tokenProps[token].symbol];
+      }
+
+      // note every price relative to the tokens within the intents itself
+      for (const intent of this.airswapService.intents) {
+        if (intent.makerProps && intent.takerProps
+            && this.usdPrices[intent.makerProps.symbol] && this.usdPrices[intent.takerProps.symbol]) {
+          intent.price = this.usdPrices[intent.makerProps.symbol] / this.usdPrices[intent.takerProps.symbol];
+        }
       }
     });
   }
@@ -297,5 +336,4 @@ export class PriceService {
     promiseList.push(this.getBalances());
     return Promise.all(promiseList);
   }
-
 }
