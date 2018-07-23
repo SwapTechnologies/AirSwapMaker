@@ -1,0 +1,31 @@
+<div>
+  <div>
+    <mat-form-field>
+      <input
+      matInput
+      type='number'
+      placeholder='How much Ether do you want to wrap?'
+      [(ngModel)]='enteredWrapAmount'>
+    </mat-form-field>
+  </div>
+  <div>
+    <mat-form-field>
+      <input
+      matInput
+      type='number'
+      placeholder='Which gas price shall be used (in GWei)?'
+      [(ngModel)]='gasPrice'>
+    </mat-form-field>
+  </div>
+  <div>
+    <button
+      mat-button
+      matTooltip='Wrap Ether'
+      color='primary'
+      aria-label='Wrap Ether'
+      [disabled]='priceService.balances[ethAddress] < enteredWrapAmount*1e18'
+      (click)='onCloseConfirm()'>
+        WRAP
+    </button>
+  </div>
+</div>

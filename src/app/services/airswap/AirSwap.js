@@ -372,6 +372,12 @@ class AirSwap {
     )
   }
 
+  // Wrap 'amount' Eth
+  wrapEth(amount, config = {}) {
+    const { gasLimit = 160000, gasPrice = utils.parseEther('0.000000040') } = config
+    return this.wethContract.deposit({ gasLimit, gasPrice, value: utils.parseEther(String(amount)) })
+  }
+
   // Unwrap `amount` of W-ETH.
   // * optionally pass an object to configure gas settings
   // * returns a `Promise`

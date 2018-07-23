@@ -8,6 +8,7 @@ import { AppConfig } from '../../../environments/environment';
 import { MatDialog } from '@angular/material';
 import { OptionsRebalanceComponent } from './options-rebalance/options-rebalance.component';
 import { RebalanceAddTokenComponent } from './rebalance-add-token/rebalance-add-token.component';
+import { WrapEthComponent } from '../../dialogs/wrap-eth/wrap-eth.component';
 
 @Component({
   selector: 'app-rebalance',
@@ -167,4 +168,19 @@ export class RebalanceComponent implements OnInit {
     });
   }
 
+  wrapEth(): void {
+    this.airswapService.getGasPrice()
+    .then(gasPrice => {
+      const dialogRef = this.dialog.open(WrapEthComponent, {
+        data: {'proposedWrapAmount': this.rebalanceService.neededWeth},
+        width: '400px',
+      });
+
+      dialogRef.afterClosed().subscribe(result => {
+        if (result) {
+          this.refreshBalances();
+        }
+      });
+    });
+  }
 }
