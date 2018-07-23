@@ -26,6 +26,11 @@ export class AirswapService {
 
   public tokensInApprovalPending = {};
   public locallyStoredIntents = {};
+
+  public astBalance = 0;
+  public remainingIntents = 0;
+
+
   constructor(
     private erc20Service: Erc20Service,
     private http: HttpClient,
@@ -56,6 +61,16 @@ export class AirswapService {
       }
     }).catch((error) => {
       console.log('Error.');
+    });
+  }
+
+  determineAstBalanceAndRemainingIntents(): Promise<any> {
+    return this.erc20Service.balance(
+      AppConfig.astAddress,
+      this.asProtocol.wallet.address
+    ).then(balance => {
+      this.astBalance = balance / 1e4;
+      this.remainingIntents = Math.floor((this.astBalance - 250 * this.intents.length) / 250);
     });
   }
 
@@ -91,7 +106,7 @@ export class AirswapService {
 
         this.tokenList = tokenList;
         this.tokenProps = tokenProps;
-
+        this.remainingIntents = Math.floor((this.astBalance - 250 * this.intents.length) / 250);
         this.storeIntentsToLocalFile();
         return result;
       });

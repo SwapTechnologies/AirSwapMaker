@@ -29,6 +29,7 @@
         mat-icon-button
         color="primary"
         matTooltip="Add a token to watch in portfolio"
+        [disabled]="rebalanceService.algorithmIsRunning"
         (click)="addToken()">
           <mat-icon>add</mat-icon>
         </button>
@@ -83,8 +84,13 @@
         (click)='wrapEth()'>
         WRAP
       </button>
-    </div>
     <br>
+    </div>
+    <div *ngIf="!rebalanceService.enoughIntents">
+      <div style="color: red"><b>Not enough AST</b></div>
+      <div style="color: red">You need {{rebalanceService.missingAst}} more AST</div>
+    <br>
+    </div>
     <div *ngIf="objectKeys(rebalanceService.deltaBalances).length > 0">
       <br>
       <div><i>Actions for Rebalance</i></div>
@@ -130,7 +136,7 @@
         matSuffix
         matTooltip='Set Fraction'
         color='primary'
-        [disabled]='(enteredFractions[token] < 0 || enteredFractions[token] > 100)'
+        [disabled]='(rebalanceService.algorithmIsRunning || enteredFractions[token] < 0 || enteredFractions[token] > 100)'
         (click)='setFraction(token)'
         aria-label='Set Fraction'>
           <mat-icon>fast_forward</mat-icon>
@@ -142,6 +148,7 @@
           *ngIf="token !== ethAddress"
           color='primary'
           matTooltip='Remove from Portfolio View'
+          [disabled]="rebalanceService.algorithmIsRunning"
           (click)='removeToken(token)'>
           <mat-icon>clear</mat-icon>
         </button>
@@ -150,12 +157,14 @@
   </mat-list>
   <button
   mat-button
-  (click)="scaleToOne()">
+  (click)="scaleToOne()"
+  [disabled]="rebalanceService.algorithmIsRunning">
     SCALE TO 100%
   </button>
   <span *ngIf="!priceService.algorithmRunning">
     <button
     mat-button
+    [disabled]="!rebalanceService.enoughIntents"
     (click)="startAlgorithm()">
       START REBALANCING
     </button>

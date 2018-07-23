@@ -43,7 +43,7 @@ export class RebalanceComponent implements OnInit {
 
   setFraction(token: any) {
     // called when a fraction is set in the ui
-    if (this.enteredFractions[token] >= 0 && this.enteredFractions[token] <= 100) {
+    if (!this.rebalanceService.algorithmIsRunning && this.enteredFractions[token] >= 0 && this.enteredFractions[token] <= 100) {
       this.rebalanceService.goalFractions[token] = round(this.enteredFractions[token] / 100, 5);
 
       let sumSetFractions = 0;

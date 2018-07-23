@@ -29,6 +29,10 @@ export class RebalanceService {
 
   public neededWeth: number;
 
+  public neededIntents: number;
+  public enoughIntents: boolean;
+  public missingAst: number;
+
 
   constructor(
     private airswapService: AirswapService,
@@ -65,7 +69,7 @@ export class RebalanceService {
     });
   }
 
-  updateGoalValues() {
+  updateGoalValues(): Promise<any> {
     const goalBalances = {};
     const deltaBalances = {};
     for (const token of this.airswapService.tokenList) {
@@ -85,6 +89,7 @@ export class RebalanceService {
     this.goalBalances = goalBalances;
     this.deltaBalances = deltaBalances;
     this.calculateNeededWeth();
+    return this.calculateNeededIntents();
   }
 
   calculateNeededWeth() {
@@ -106,6 +111,29 @@ export class RebalanceService {
     this.neededWeth = neededWeth * 1e18 - wethBalance; // in wei
   }
 
+  calculateNeededIntents(): Promise<any> {
+    let neededIntents = 0;
+    for (const token of this.airswapService.tokenList) {
+      if (token !== AppConfig.wethAddress
+          && token !== AppConfig.ethAddress
+          && this.deltaBalances[token]
+          && this.deltaBalances[token] !== 0) {
+        neededIntents += 1;
+      }
+    }
+    this.neededIntents = neededIntents;
+    return this.airswapService.determineAstBalanceAndRemainingIntents()
+    .then(() => {
+      const diffAstIntents = this.airswapService.astBalance - 250 * this.neededIntents;
+      if (diffAstIntents < 0) {
+        this.enoughIntents = false;
+        this.missingAst = Math.floor(-diffAstIntents);
+      } else {
+        this.enoughIntents = true;
+      }
+    });
+  }
+
   stopAlgorithm() {
     this.priceService.stopAlgorithm();
     this.algorithmIsRunning = false;
@@ -118,8 +146,12 @@ export class RebalanceService {
     this.updateCurrentValues()
     .then(() => {
       // determine the goal balances and deltas with the given goal fractions
-      this.updateGoalValues();
-
+      return this.updateGoalValues();
+    }).then(() => {
+      // check if the algorithm can still run without problems
+      if (!this.enoughIntents) {
+        this.stopAlgorithm();
+      }
     });
 
     // refresh internally the limit prices to achieve goal distribution
