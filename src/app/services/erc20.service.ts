@@ -78,7 +78,20 @@ export class Erc20Service {
         this.tokenList.push(token);
       }
     }
+    // sort tokenList
+    this.tokenList.sort((a, b) => {
+      const nameA = a.name.toLowerCase();
+      const nameB = b.name.toLowerCase();
+      if (nameA < nameB) {
+        return -1;
+      }
+      if (nameA > nameB) {
+        return 1;
+      }
+      return 0;
+    });
   }
+
   getToken(address: string): Token {
     const validToken = this.tokens[address];
     if (validToken) {
