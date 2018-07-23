@@ -17,7 +17,7 @@ export class WrapEthComponent implements OnInit {
     public dialogRef: MatDialogRef<WrapEthComponent>,
     @Inject(MAT_DIALOG_DATA) public data: any,
     private airswapService: AirswapService,
-    private priceService: PriceService
+    public priceService: PriceService
   ) {
     this.enteredWrapAmount = data['proposedWrapAmount'] / 1e18;
   }

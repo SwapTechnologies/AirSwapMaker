@@ -14,7 +14,7 @@ export class OptionsRebalanceComponent implements OnInit {
   constructor(
     public dialogRef: MatDialogRef<OptionsRebalanceComponent>,
     @Inject(MAT_DIALOG_DATA) public data: any,
-    private priceService: PriceService
+    public priceService: PriceService
   ) {
     this.enteredExpiration = Math.floor(this.priceService.expirationTime / 60);
   }
