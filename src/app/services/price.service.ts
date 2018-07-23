@@ -5,6 +5,8 @@ import { Erc20Service } from './erc20.service';
 import { HttpClient } from '@angular/common/http';
 import { TimerObservable } from 'rxjs/observable/TimerObservable';
 
+import { AppConfig } from '../../environments/environment';
+
 @Injectable({
   providedIn: 'root'
 })
@@ -49,7 +51,6 @@ export class PriceService {
           if (this.airswapService.connected) {
             this.getBalancesAndPrices()
             .then(() => {
-              this.updateBalances();
               this.setPricingLogic();
             });
           }
@@ -77,11 +78,11 @@ export class PriceService {
   setPricingLogic() {
     this.airswapService.asProtocol.RPC_METHOD_ACTIONS.getOrder = ((msg) => {
       const {
-        makerAddress, // eslint-disable-line
-        makerAmount, // eslint-disable-line
+        makerAddress,
+        makerAmount,
         makerToken,
         takerAddress,
-        takerAmount, // eslint-disable-line
+        takerAmount,
         takerToken,
       } = msg.params;
 
@@ -107,7 +108,7 @@ export class PriceService {
         return;
       }
 
-      // get balances of the taker
+      // get current balances of the taker and the maker
       let takerMakerBalance = 0;
       let takerTakerBalance = 0;
       const promiseList = [];
@@ -136,8 +137,8 @@ export class PriceService {
         let answerMakerAmount = makerAmount;
         let answerTakerAmount = takerAmount;
 
-        // pricing logic
-        if (this.limitPrices[makerToken] && this.limitPrices[makerToken][takerToken]) { // check if a limit price is set for the token pair
+        // check if a limit price is set for the token pair
+        if (this.limitPrices[makerToken] && this.limitPrices[makerToken][takerToken]) {
           if (makerAmount) {
             // Taker wants to buy a number of makerToken
             answerTakerAmount = this.erc20Service.toFixed(
@@ -164,9 +165,9 @@ export class PriceService {
             return;
           }
 
-          if (this.balances[makerToken] < Number(answerMakerAmount)) {
-            this.logsService.addLog('Cancelled. You only have  ' +
-            this.balances[makerToken] * (10 ** (-makerProps.decimals)) + ' ' +
+          if (this.balancesLiquidity[makerToken] < Number(answerMakerAmount)) {
+            this.logsService.addLog('Cancelled. Your liquid balance is only  ' +
+            this.balancesLiquidity[makerToken] * (10 ** (-makerProps.decimals)) + ' ' +
               makerProps.symbol);
             return;
           }
@@ -268,19 +269,16 @@ export class PriceService {
 
     // make a list of all token symbols in the intents
     const tokenSymbolList = [];
-    for (const intent of this.airswapService.intents) {
-      if (intent.makerProps && intent.takerProps) {
-        if (!(tokenSymbolList.indexOf(intent.makerProps.symbol) >= 0)) {
-          tokenSymbolList.push(intent.makerProps.symbol);
-        }
-        if (!(tokenSymbolList.indexOf(intent.takerProps.symbol) >= 0)) {
-          tokenSymbolList.push(intent.takerProps.symbol);
-        }
-      }
+    for (const tokenAddress of this.airswapService.tokenList) {
+      tokenSymbolList.push(this.airswapService.tokenProps[tokenAddress].symbol);
     }
-
     return this.getPricesOfList(tokenSymbolList)
     .then((usdPrices) => {
+
+      // crypto compare doesnt know WETH prices
+      if (usdPrices['WETH']) {
+        usdPrices['WETH'] = usdPrices['ETH'];
+      }
       this.usdPrices = usdPrices;
       // make a mapping token -> price for further use
       for (const token of this.airswapService.tokenList) {
@@ -299,35 +297,39 @@ export class PriceService {
 
   getBalances(): Promise<any> {
     const promiseList = [];
-    // for (const token of this.tokenList) {
+    const newBalances = {};
+
     for (const token of this.airswapService.tokenList) {
       promiseList.push(
         this.erc20Service.balance(token, this.airswapService.asProtocol.wallet.address)
         .then((balance) => {
-          this.balances[token] = balance;
+          newBalances[token] = balance;
         })
       );
     }
     return Promise.all(promiseList).then(() => {
+      this.balances = newBalances;
       this.updateBalances();
     });
   }
 
   updateBalances(): void {
+    const balancesLiquidity = {};
     for (const token of this.airswapService.tokenList) {
       if (this.balancesLimits[token]) {
-        this.balancesLiquidity[token] = this.balancesLimits[token];
+        balancesLiquidity[token] = this.balancesLimits[token];
       } else if (this.balances[token]) {
-        this.balancesLiquidity[token] = this.balances[token];
+        balancesLiquidity[token] = this.balances[token];
       }
       if (this.openOrders[token]) {
         for (const signature in this.openOrders[token]) {
           if (this.openOrders[token][signature]) {
-            this.balancesLiquidity[token] -= this.openOrders[token][signature].makerAmount;
+            balancesLiquidity[token] -= this.openOrders[token][signature].makerAmount;
           }
         }
       }
     }
+    this.balancesLiquidity = balancesLiquidity;
   }
 
   getBalancesAndPrices(): Promise<any> {

@@ -66,8 +66,10 @@ export class IntentsComponent implements OnInit {
   }
 
   initialize(): void {
-    this.getIntents();
-    this.getAstBalance();
+    this.getIntents()
+    .then(() => {
+      this.getAstBalance();
+    });
   }
 
   checkIfIntentsArePending(): void {
@@ -81,9 +83,9 @@ export class IntentsComponent implements OnInit {
     }
   }
 
-  getIntents(): void {
+  getIntents(): Promise<any> {
     if (this.airswapService.connected && this.airswapService.isAuthenticated) {
-      this.airswapService.getIntents()
+      return this.airswapService.getIntents()
       .then(() => {
         this.intentsMarkedForRemoval = [];
         for (const intent of this.airswapService.intents) {
@@ -94,6 +96,8 @@ export class IntentsComponent implements OnInit {
         }
         this.checkApproval();
       });
+    } else {
+      return Promise.resolve();
     }
   }
 
@@ -159,7 +163,8 @@ export class IntentsComponent implements OnInit {
     if (this.makerToken
     && this.takerToken
     && this.makerToken.address !== this.takerToken.address
-    && !this.balanceTooLow) {
+    && !this.balanceTooLow
+    && !this.priceService.algorithmRunning) {
       const intent = {
         'makerToken': this.makerToken.address.toLowerCase(),
         'takerToken': this.takerToken.address.toLowerCase(),
@@ -185,20 +190,22 @@ export class IntentsComponent implements OnInit {
   }
 
   removeMarkedIntents(): void {
-    const newIntentList = JSON.parse(JSON.stringify(this.airswapService.intents));
-    // removed marked intents
-    for (const intent of this.intentsMarkedForRemoval) {
-      const idx = this.findIdxOfIntent(intent, newIntentList);
-      if (idx >= 0) {
-        newIntentList.splice( idx, 1 );
-        this.priceService.removePriceOffer(intent.makerToken, intent.takerToken);
+    if (!this.priceService.algorithmRunning) {
+      const newIntentList = JSON.parse(JSON.stringify(this.airswapService.intents));
+      // removed marked intents
+      for (const intent of this.intentsMarkedForRemoval) {
+        const idx = this.findIdxOfIntent(intent, newIntentList);
+        if (idx >= 0) {
+          newIntentList.splice( idx, 1 );
+          this.priceService.removePriceOffer(intent.makerToken, intent.takerToken);
+        }
       }
+      this.markedIntents = false;
+      this.airswapService.setIntents(newIntentList)
+      .then(() => {
+        this.initialize();
+      });
     }
-    this.markedIntents = false;
-    this.airswapService.setIntents(newIntentList)
-    .then(() => {
-      this.initialize();
-    });
   }
 
   checkApproval(): void {

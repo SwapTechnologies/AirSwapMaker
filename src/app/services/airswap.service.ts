@@ -61,7 +61,11 @@ export class AirswapService {
 
   getIntents(): Promise<any> {
     if (this.connected) {
-      this.tokenList = [];
+      // always include eth in tokenList
+      const tokenList = [AppConfig.ethAddress];
+      const tokenProps = {};
+      tokenProps[AppConfig.ethAddress] = this.erc20Service.getToken(AppConfig.ethAddress);
+
       return this.asProtocol.getIntents()
       .then(result => {
         this.intents = result;
@@ -74,19 +78,42 @@ export class AirswapService {
             intent.makerProps.powerDecimals = 10 ** makerProps.decimals;
             intent.takerProps.powerDecimals = 10 ** takerProps.decimals;
 
-            if (!(this.tokenList.indexOf(intent.makerProps.address) >= 0)) {
-              this.tokenList.push(intent.makerProps.address);
-              this.tokenProps[intent.makerProps.address] = intent.makerProps;
+            if (!(tokenList.indexOf(intent.makerProps.address) >= 0)) {
+              tokenList.push(intent.makerProps.address);
+              tokenProps[intent.makerProps.address] = intent.makerProps;
             }
-            if (!(this.tokenList.indexOf(intent.takerProps.address) >= 0)) {
-              this.tokenList.push(intent.takerProps.address);
-              this.tokenProps[intent.takerProps.address] = intent.takerProps;
+            if (!(tokenList.indexOf(intent.takerProps.address) >= 0)) {
+              tokenList.push(intent.takerProps.address);
+              tokenProps[intent.takerProps.address] = intent.takerProps;
             }
           }
         }
+
+        this.tokenList = tokenList;
+        this.tokenProps = tokenProps;
+
         this.storeIntentsToLocalFile();
         return result;
       });
+    }
+  }
+
+  addTokenToList(token) {
+    if (this.tokenProps[token.address] === undefined) {
+      const tokenProps = this.erc20Service.getToken(token.address);
+      if (tokenProps) {
+        this.tokenList.push(tokenProps.address);
+        tokenProps['powerDecimals'] = 10 ** tokenProps.decimals;
+        this.tokenProps[tokenProps.address] = tokenProps;
+      }
+    }
+  }
+
+  removeTokenFromList(tokenAddress) {
+    const idx = this.tokenList.indexOf(tokenAddress);
+    if (idx > -1) {
+      this.tokenList.splice(idx, 1);
+      delete this.tokenProps[tokenAddress];
     }
   }
 
@@ -123,6 +150,7 @@ export class AirswapService {
   }
 
   onConnectionClose(): void {
+    console.log('the connection is being closed.');
     this.connected = false;
     this.web3Service.connectedAddress = null;
   }

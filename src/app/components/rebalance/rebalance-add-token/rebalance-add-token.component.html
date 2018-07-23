@@ -1,0 +1,41 @@
+<div>
+  <mat-form-field>
+    <input
+    type="text"
+    placeholder="Add token to your portfolio"
+    aria-label="token"
+    matInput
+    [(ngModel)]='tokenName'
+    (ngModelChange)='enteredTokenName()'
+    (keydown.enter)="addToken()"
+    [matAutocomplete]="autoMaker">
+    <mat-autocomplete #autoMaker="matAutocomplete">
+      <mat-option
+      *ngFor="let token of filteredValidatedTokens | callback: filterEther"
+      [value]="token.name">
+        {{ token.name }}
+      </mat-option>
+    </mat-autocomplete>
+    <mat-hint *ngIf="token">{{token.address.slice(0,14)}}...</mat-hint>
+    <button
+    mat-icon-button
+    matSuffix
+    color="primary"
+    matTooltip="Clear Field"
+    [disabled]="!tokenName"
+    (click)="clearTokenName()">
+    <mat-icon>clear</mat-icon>
+    </button>
+
+    <button
+    mat-icon-button
+    matSuffix
+    matTooltip='Add Token'
+    color='primary'
+    [disabled]='token === undefined'
+    (click)='addToken()'
+    aria-label='Add Token'>
+      <mat-icon>fast_forward</mat-icon>
+    </button>
+  </mat-form-field>
+</div>

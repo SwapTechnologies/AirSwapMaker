@@ -83,7 +83,8 @@
         matTooltip='Set Price'
         color="primary"
         aria-label="Set Price"
-        [disabled]=!priceValid(enteredPrices[intent.makerProps.address+intent.takerProps.address])
+        [disabled]='!priceValid(enteredPrices[intent.makerProps.address+intent.takerProps.address])
+                    || priceService.algorithmRunning'
         (click)="setPrice(
           intent.makerProps,
           intent.takerProps,
@@ -100,7 +101,8 @@
           matTooltip="Stop offering tokens"
           (click)="removePrice(
             intent.makerProps,
-            intent.takerProps)">
+            intent.takerProps)"
+          [disabled]='priceService.algorithmRunning'>
           <mat-icon>clear</mat-icon>
         </button>
         <button
@@ -114,7 +116,6 @@
           intent.takerProps)">
           <mat-icon>more_vert</mat-icon>
         </button>
-
       </mat-form-field>
     </div>
   </div>

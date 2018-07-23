@@ -43,6 +43,8 @@ import { AskGasPriceApprovalComponent } from './components/intents/ask-gas-price
 import { RebalanceComponent } from './components/rebalance/rebalance.component';
 
 import { RebalanceService } from './services/algorithms/rebalance.service';
+import { OptionsRebalanceComponent } from './components/rebalance/options-rebalance/options-rebalance.component';
+import { RebalanceAddTokenComponent } from './components/rebalance/rebalance-add-token/rebalance-add-token.component';
 // AoT requires an exported function for factories
 export function HttpLoaderFactory(http: HttpClient) {
   return new TranslateHttpLoader(http, './assets/i18n/', '.json');
@@ -63,7 +65,9 @@ export function HttpLoaderFactory(http: HttpClient) {
     DialogEnterPrivateKeyComponent,
     AddTokenComponent,
     AskGasPriceApprovalComponent,
-    RebalanceComponent
+    RebalanceComponent,
+    OptionsRebalanceComponent,
+    RebalanceAddTokenComponent
   ],
   imports: [
     BrowserModule,
@@ -95,6 +99,8 @@ export function HttpLoaderFactory(http: HttpClient) {
     DialogLoadKeystoreComponent,
     AddTokenComponent,
     AskGasPriceApprovalComponent,
+    OptionsRebalanceComponent,
+    RebalanceAddTokenComponent,
   ],
   bootstrap: [AppComponent]
 })

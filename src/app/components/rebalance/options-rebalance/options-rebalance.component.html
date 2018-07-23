@@ -1,0 +1,21 @@
+<div>
+  <mat-form-field class='expirationInput'>
+    <input
+    matInput
+    type='number'
+    (keydown.enter)='setExpiration()'
+    placeholder='Set the expiration time for an given offer (in minutes)'
+    [(ngModel)]='enteredExpiration'>
+    <mat-hint align='end'>Set expiration: {{priceService.expirationTime / 60 | number: '1.1-2' }} </mat-hint>
+    <button
+      mat-icon-button
+      matSuffix
+      matTooltip='Set Expiration Time'
+      color='primary'
+      aria-label='Set Expiration Time'
+      [disabled]='!(enteredExpiration > 0)'
+      (click)='setExpiration()'>
+        <mat-icon>fast_forward</mat-icon>
+      </button>
+  </mat-form-field>
+</div>

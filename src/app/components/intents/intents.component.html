@@ -99,7 +99,8 @@
           mat-icon-button
           color="primary"
           matTooltip="Add intent to indexer"
-          (click)="addTokenPair()">
+          (click)="addTokenPair()"
+          [disabled]="priceService.algorithmRunning">
           <mat-icon>add</mat-icon>
         </button>
       </div>
@@ -143,7 +144,8 @@
         <div *ngIf="markedIntents">
           <button
           mat-raised-button
-          (click)="removeMarkedIntents()">
+          (click)="removeMarkedIntents()"
+          [disabled]="priceService.algorithmRunning">
             REMOVE MARKED INTENTS
           </button>
         </div>

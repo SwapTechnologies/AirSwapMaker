@@ -8,3 +8,37 @@
   top: 10px;
   right: 10px;
 }
+
+.enterFractionContainer {
+  width: 100%;
+  margin-top: 25px;
+  margin-bottom: 25px;
+}
+
+.enterFractionInput {
+  width: 400px;
+  margin-left: 20px;
+  margin-right: 20px;
+}
+
+.progress-wrapper {
+  position: relative;
+  margin: 20px auto;
+  font-size: 20px;
+
+  .iconContainer {
+    position: absolute;
+
+    top: 50%;
+    bottom: auto;
+    left: 50%;
+    transform: translateY(-50%) translateX(-50%);
+  }
+
+  .addTokenButton {
+    position: absolute;
+    left: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+}
