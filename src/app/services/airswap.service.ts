@@ -79,7 +79,10 @@ export class AirswapService {
       // always include eth in tokenList
       const tokenList = [AppConfig.ethAddress];
       const tokenProps = {};
-      tokenProps[AppConfig.ethAddress] = this.erc20Service.getToken(AppConfig.ethAddress);
+
+      const ethProps = this.erc20Service.getToken(AppConfig.ethAddress);
+      ethProps['powerDecimals'] = 1e18;
+      tokenProps[AppConfig.ethAddress] = ethProps;
 
       return this.asProtocol.getIntents()
       .then(result => {
@@ -167,7 +170,6 @@ export class AirswapService {
   onConnectionClose(): void {
     console.log('the connection is being closed.');
     this.connected = false;
-    this.web3Service.connectedAddress = null;
   }
 
   storeIntentsToLocalFile() {
