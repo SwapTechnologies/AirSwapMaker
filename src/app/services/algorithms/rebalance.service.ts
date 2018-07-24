@@ -27,12 +27,16 @@ export class RebalanceService {
 
   public algorithmIsRunning = false;
 
+  public amountWethSelling = 0;
   public neededWeth: number;
 
   public neededIntents: number;
   public enoughIntents: boolean;
   public missingAst: number;
 
+  public priceModifier = 1;
+
+  public updateCountdown = 100;
 
   constructor(
     private airswapService: AirswapService,
@@ -74,7 +78,7 @@ export class RebalanceService {
     const deltaBalances = {};
     for (const token of this.airswapService.tokenList) {
       if (token === AppConfig.wethAddress) {
-        continue; // weth is included in eth
+        continue; // weth is included in currentFraction, goalBalances of eth
       }
       if (this.goalFractions[token] !== undefined
           && this.priceService.usdPricesByToken[token]) {
@@ -86,6 +90,13 @@ export class RebalanceService {
         deltaBalances[token] = goalBalances[token] - this.priceService.balances[token];
       }
     }
+    if (this.priceService.balances[AppConfig.wethAddress] !== undefined) {
+      // include weth balance in deltaBalance of eth
+      // if you get more eth -> people can always send you no matter what your balance is
+      // if you try to reduce eth -> you have to wrap it anyway manually
+      deltaBalances[AppConfig.ethAddress] -= this.priceService.balances[AppConfig.wethAddress];
+    }
+
     this.goalBalances = goalBalances;
     this.deltaBalances = deltaBalances;
     this.calculateNeededWeth();
@@ -93,7 +104,7 @@ export class RebalanceService {
   }
 
   calculateNeededWeth() {
-    let neededWeth = 0;
+    let amountWethSelling = 0;
     for (const token of this.airswapService.tokenList) {
       if (token !== AppConfig.wethAddress
           && token !== AppConfig.ethAddress
@@ -101,14 +112,16 @@ export class RebalanceService {
           && this.deltaBalances[token] > 0) {
 
         // buy token for weth
-        neededWeth += this.deltaBalances[token]
+        amountWethSelling += this.deltaBalances[token]
           / this.airswapService.tokenProps[token].powerDecimals
           * this.priceService.usdPricesByToken[token]
           / this.priceService.usdPricesByToken[AppConfig.ethAddress];
       }
     }
+    this.amountWethSelling = amountWethSelling * 1e18;
+
     const wethBalance = this.priceService.balances[AppConfig.wethAddress];
-    this.neededWeth = neededWeth * 1e18 - wethBalance; // in wei
+    this.neededWeth = this.amountWethSelling - wethBalance; // in wei
   }
 
   calculateNeededIntents(): Promise<any> {
@@ -136,10 +149,12 @@ export class RebalanceService {
 
   stopAlgorithm() {
     this.priceService.stopAlgorithm();
+    this.priceService.limitPrices = {}; // remove all pricing
     this.algorithmIsRunning = false;
   }
 
   updateIteration() {
+    this.updateCountdown = 0;
     // method that is called as refresher for the algorithm
 
     // update current $ prices, balances, calculate portfolio value and current fractions
@@ -152,6 +167,21 @@ export class RebalanceService {
       if (!this.enoughIntents) {
         this.stopAlgorithm();
       }
+
+      for (const intent of this.airswapService.intents) {
+        console.log('set intent price for buying ', intent.makerProps.symbol,
+          ' for ', intent.takerProps.symbol, ' to ', intent.price);
+        this.priceService.setPrice(intent.makerToken, intent.takerToken, intent.price);
+      }
+
+      for (const token of this.airswapService.tokenList) {
+        if (token !== AppConfig.wethAddress) { // treat weth seperately
+          this.priceService.balancesLimits[token.address] = Math.abs(this.deltaBalances[token.address]);
+        }
+      }
+      this.priceService.balancesLimits[AppConfig.wethAddress] = this.amountWethSelling;
+      console.log('limitPrices', this.priceService.limitPrices);
+      console.log('limit balances', this.priceService.balancesLimits);
     });
 
     // refresh internally the limit prices to achieve goal distribution
@@ -202,16 +232,18 @@ export class RebalanceService {
         // resync with get intents
         return this.airswapService.getIntents();
       }).then(() => {
-        // store a deep copy of the initially set tokens for the run of the algorithm
-        // so they can be changed while not losing their information
-
         // stop the price updating timer and avoid users interferring into the algorithm flow
         // by blocking manual setIntent and manual setPrices
         this.priceService.startAlgorithm();
         this.algorithmIsRunning = true;
-        this.updateTimer = TimerObservable.create(0, 30000)
+
+        this.updateCountdown = 100;
+        this.updateTimer = TimerObservable.create(0, 100)
         .subscribe( () => {
-          this.updateIteration();
+          this.updateCountdown = this.updateCountdown + 100 / 30000 * 100;
+          if (this.updateCountdown >= 100) {
+            this.updateIteration();
+          }
         });
       });
     });

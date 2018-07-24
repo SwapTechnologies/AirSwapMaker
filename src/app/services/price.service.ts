@@ -256,6 +256,15 @@ export class PriceService {
     });
   }
 
+  setPrice(makerAddress: any, takerAddress: any, price: number) {
+    if (price > 0) {
+      if (!this.limitPrices[makerAddress]) {
+        this.limitPrices[makerAddress] = {};
+      }
+      this.limitPrices[makerAddress][takerAddress] = price;
+    }
+  }
+
   removePriceOffer(makerToken, takerToken) {
     // function to remove answering requests of a certain token pair
     if (this.limitPrices[makerToken] &&
@@ -289,7 +298,8 @@ export class PriceService {
       for (const intent of this.airswapService.intents) {
         if (intent.makerProps && intent.takerProps
             && this.usdPrices[intent.makerProps.symbol] && this.usdPrices[intent.takerProps.symbol]) {
-          intent.price = this.usdPrices[intent.makerProps.symbol] / this.usdPrices[intent.takerProps.symbol];
+          intent.price = this.usdPrices[intent.makerProps.symbol] / this.usdPrices[intent.takerProps.symbol]
+                          * intent.takerProps.powerDecimals / intent.makerProps.powerDecimals;
         }
       }
     });

@@ -141,6 +141,7 @@ export class RebalanceComponent implements OnInit {
   }
 
   refreshBalances(): void {
+    this.rebalanceService.updateCountdown = 0;
     this.rebalanceService.updateCurrentValues()
     .then(() => {
       this.rebalanceService.updateGoalValues();
