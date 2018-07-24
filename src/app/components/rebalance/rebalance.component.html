@@ -67,14 +67,16 @@
   </mat-card>
 
   <mat-card class='liquidBalances'>
-    <div><i>Liquid Balances</i></div>
-    <div *ngFor='let token of objectKeys(priceService.balancesLiquidity)'>
-      <span *ngIf='priceService.balancesLiquidity[token] && airswapService.tokenProps[token]'>
-        {{priceService.balancesLiquidity[token] / airswapService.tokenProps[token].powerDecimals | number: '1.1-8'}} {{airswapService.tokenProps[token].symbol}}
-      </span>
+    <div *ngIf="objectKeys(priceService.balancesLiquidity).length > 0">
+      <div><i>Liquid Balances</i></div>
+      <div *ngFor='let token of objectKeys(priceService.balancesLiquidity)'>
+        <span *ngIf='priceService.balancesLiquidity[token] && airswapService.tokenProps[token]'>
+          {{priceService.balancesLiquidity[token] / airswapService.tokenProps[token].powerDecimals | number: '1.1-8'}} {{airswapService.tokenProps[token].symbol}}
+        </span>
+      </div>
+      <br>
     </div>
-    <br>
-    <div *ngIf="rebalanceService.neededWeth > 0">
+    <div *ngIf="rebalanceService.amountWethSelling > priceService.balances[wethAddress]">
       <div><b>You need to wrap</b></div>
       <div>{{rebalanceService.neededWeth / 1e18 | number: '1.1-8'}} WETH</div>
       <button
@@ -84,15 +86,14 @@
         (click)='wrapEth()'>
         WRAP
       </button>
-    <br>
+      <br>
     </div>
     <div *ngIf="!rebalanceService.enoughIntents">
       <div style="color: red"><b>Not enough AST</b></div>
       <div style="color: red">You need {{rebalanceService.missingAst}} more AST</div>
-    <br>
+      <br>
     </div>
     <div *ngIf="objectKeys(rebalanceService.deltaBalances).length > 0">
-      <br>
       <div><i>Actions for Rebalance</i></div>
       <div *ngFor='let token of airswapService.tokenList' style='text-align: right;'>
         <span *ngIf="rebalanceService.deltaBalances[token] && airswapService.tokenProps[token]">
@@ -164,7 +165,7 @@
   <span *ngIf="!priceService.algorithmRunning">
     <button
     mat-button
-    [disabled]="!rebalanceService.enoughIntents"
+    [disabled]="!rebalanceService.enoughIntents || rebalanceService.getSumFractions() !== 1"
     (click)="startAlgorithm()">
       START REBALANCING
     </button>

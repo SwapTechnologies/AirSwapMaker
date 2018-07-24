@@ -37,7 +37,7 @@ export class WrapEthComponent implements OnInit {
     if (this.enteredWrapAmount > 0 && this.gasPrice > 0) {
       this.dialogRef.close(
         this.airswapService.asProtocol.wrapEth(
-          Math.floor(this.enteredWrapAmount * 1e18), {gasPrice: Math.floor(this.gasPrice * 1e9)}
+          this.enteredWrapAmount, {gasPrice: Math.floor(this.gasPrice * 1e9)}
         )
       );
     } else {

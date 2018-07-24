@@ -148,9 +148,15 @@ export class RebalanceService {
   }
 
   stopAlgorithm() {
+    if (this.updateTimer) {
+      this.updateTimer.unsubscribe();
+      this.updateTimer = null;
+    }
     this.priceService.stopAlgorithm();
     this.priceService.limitPrices = {}; // remove all pricing
     this.algorithmIsRunning = false;
+    this.priceService.updateCountdown = 100;
+    this.priceService.startContinuousPriceBalanceUpdating();
   }
 
   updateIteration() {
@@ -169,33 +175,40 @@ export class RebalanceService {
       }
 
       for (const intent of this.airswapService.intents) {
-        console.log('set intent price for buying ', intent.makerProps.symbol,
-          ' for ', intent.takerProps.symbol, ' to ', intent.price);
+        console.log('set price to buy ', intent.makerProps.symbol,
+          ' for ', intent.takerProps.symbol, ' to ', intent.price, ' ',
+          intent.takerProps.symbol, '/', intent.makerProps.symbol);
         this.priceService.setPrice(intent.makerToken, intent.takerToken, intent.price);
       }
 
       for (const token of this.airswapService.tokenList) {
         if (token !== AppConfig.wethAddress) { // treat weth seperately
-          this.priceService.balancesLimits[token.address] = Math.abs(this.deltaBalances[token.address]);
+          if (this.deltaBalances[token] < 0) {
+            // sell token up to amount:
+            this.priceService.balancesLimits[token] = -this.deltaBalances[token];
+          }
         }
       }
       this.priceService.balancesLimits[AppConfig.wethAddress] = this.amountWethSelling;
-      console.log('limitPrices', this.priceService.limitPrices);
-      console.log('limit balances', this.priceService.balancesLimits);
+      this.priceService.updateBalances();
     });
 
     // refresh internally the limit prices to achieve goal distribution
     // update the prices according to the current prices
   }
 
-  startAlgorithm() {
-    // check if everything is set for the start
+  getSumFractions(): number {
     let sumFractions = 0;
     for (const token of this.airswapService.tokenList) {
       if (this.goalFractions[token]) {
         sumFractions += this.goalFractions[token];
       }
-    }
+    }return sumFractions;
+  }
+
+  startAlgorithm() {
+    // check if everything is set for the start
+    const sumFractions = this.getSumFractions();
     if ((Math.abs(sumFractions - 1) > this.PRECISION_TOLERANCE)) {
       throw new Error('Sum of goal fractions is off from desired precision. ' + Math.abs(sumFractions - 1));
     }

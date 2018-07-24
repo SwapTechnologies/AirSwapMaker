@@ -184,6 +184,9 @@ export class PriceService {
             expiration,
             nonce,
           });
+
+          // testmode, dont send it
+          console.log('answer:', signedOrder);
           this.airswapService.asProtocol.call(
             takerAddress, // send order to address who requested it
             { id: msg.id, jsonrpc: '2.0', result: signedOrder }, // response id should match their `msg.id`
@@ -216,6 +219,7 @@ export class PriceService {
             }
           });
           this.openOrders[makerToken][signature] = signedOrder;
+          this.updateBalances();
         }
       });
     });
@@ -285,9 +289,7 @@ export class PriceService {
     .then((usdPrices) => {
 
       // crypto compare doesnt know WETH prices
-      if (usdPrices['WETH']) {
-        usdPrices['WETH'] = usdPrices['ETH'];
-      }
+      usdPrices['WETH'] = usdPrices['ETH'];
       this.usdPrices = usdPrices;
       // make a mapping token -> price for further use
       for (const token of this.airswapService.tokenList) {
@@ -326,11 +328,12 @@ export class PriceService {
   updateBalances(): void {
     const balancesLiquidity = {};
     for (const token of this.airswapService.tokenList) {
-      if (this.balancesLimits[token]) {
-        balancesLiquidity[token] = this.balancesLimits[token];
-      } else if (this.balances[token]) {
-        balancesLiquidity[token] = this.balances[token];
+      // liquid balance cant be more than the actual balance, limit cant be higher than the actual balance
+      if (this.balances[token] !== undefined && this.balancesLimits[token] !== undefined) {
+        balancesLiquidity[token] = Math.min(this.balancesLimits[token], this.balances[token]);
       }
+
+      // if there are open orders takers can take, consider them as taken while they are open
       if (this.openOrders[token]) {
         for (const signature in this.openOrders[token]) {
           if (this.openOrders[token][signature]) {
