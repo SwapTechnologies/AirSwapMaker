@@ -66,7 +66,7 @@
     </div>
   </mat-card>
 
-  <mat-card class='liquidBalances'>
+  <mat-card class='liquidBalances' *ngIf="objectKeys(rebalanceService.deltaBalances).length > 1">
     <div *ngIf="objectKeys(priceService.balancesLiquidity).length > 0">
       <div><i>Liquid Balances</i></div>
       <div *ngFor='let token of objectKeys(priceService.balancesLiquidity)'>
@@ -88,12 +88,12 @@
       </button>
       <br>
     </div>
-    <div *ngIf="!rebalanceService.enoughIntents">
+    <div *ngIf="!initializing && !rebalanceService.enoughIntents">
       <div style="color: red"><b>Not enough AST</b></div>
       <div style="color: red">You need {{rebalanceService.missingAst}} more AST</div>
       <br>
     </div>
-    <div *ngIf="objectKeys(rebalanceService.deltaBalances).length > 0">
+    <div>
       <div><i>Actions for Rebalance</i></div>
       <div *ngFor='let token of airswapService.tokenList' style='text-align: right;'>
         <span *ngIf="rebalanceService.deltaBalances[token] && airswapService.tokenProps[token]">
@@ -127,7 +127,7 @@
         </mat-hint>
 
         <mat-hint
-        *ngIf='rebalanceService.goalFractions[token]'
+        *ngIf='rebalanceService.goalFractions[token] !== undefined'
         align='end'>
           Set goal: {{rebalanceService.goalFractions[token] * 100 | number: '1.1-3'}} %
         </mat-hint>
@@ -165,7 +165,7 @@
   <span *ngIf="!priceService.algorithmRunning">
     <button
     mat-button
-    [disabled]="!rebalanceService.enoughIntents || rebalanceService.getSumFractions() !== 1"
+    [disabled]="!rebalanceService.enoughIntents || rebalanceService.sumDeviatesFromOne()"
     (click)="startAlgorithm()">
       START REBALANCING
     </button>

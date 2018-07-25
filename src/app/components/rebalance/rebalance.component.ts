@@ -22,6 +22,8 @@ export class RebalanceComponent implements OnInit {
   public wethAddress = AppConfig.wethAddress;
   objectKeys = Object.keys;
 
+  public initializing = true;
+
   constructor(
     public airswapService: AirswapService,
     public erc20Service: Erc20Service,
@@ -32,7 +34,12 @@ export class RebalanceComponent implements OnInit {
 
   ngOnInit() {
     if (!this.priceService.algorithmRunning) {
-      this.refreshBalances();
+      this.refreshBalances()
+      .then(() => {
+        this.initializing = false;
+      });
+    } else {
+      this.initializing = false;
     }
     for (const token of this.airswapService.tokenList) {
       if (this.rebalanceService.goalFractions[token]) {
@@ -90,23 +97,42 @@ export class RebalanceComponent implements OnInit {
     // and also sum up the not set ones using the current fractions
     let sumSetFractions = 0;
     let sumUnsetFractions = 0;
+    let nUnset = 0;
     for (const token of this.airswapService.tokenList) {
-      if (this.rebalanceService.goalFractions[token]) {
+      if (token === this.wethAddress) {
+        continue;
+      }
+      if (this.rebalanceService.goalFractions[token] !== undefined) {
         sumSetFractions += this.rebalanceService.goalFractions[token];
-      } else if (this.rebalanceService.currentFractions[token]) {
-        sumUnsetFractions += this.rebalanceService.currentFractions[token];
+      } else {
+        if (this.rebalanceService.currentFractions[token]) {
+          sumUnsetFractions += this.rebalanceService.currentFractions[token];
+        }
+        nUnset += 1;
       }
     }
     // if there are not set fractions, scale the current fractions
     // proportionally such that all adds up to 1 in the end and set them accordingly
-    if (sumUnsetFractions > 0) {
-      const rescaleFactor = (1 - sumSetFractions) / sumUnsetFractions;
-      for (const token of this.airswapService.tokenList) {
-        if (!(this.rebalanceService.goalFractions[token])
-            && this.rebalanceService.currentFractions[token] !== undefined) {
-          this.rebalanceService.goalFractions[token] =
-            round(this.rebalanceService.currentFractions[token] * rescaleFactor, 5);
-          this.enteredFractions[token] = this.rebalanceService.goalFractions[token] * 100;
+    if (nUnset > 0) {
+      if (sumUnsetFractions === 0) { // distribute the remaining fractions equally such that it adds to 1
+        for (const token of this.airswapService.tokenList) {
+          if (token === this.wethAddress) {
+            continue;
+          }
+          if (this.rebalanceService.goalFractions[token] === undefined) {
+            this.rebalanceService.goalFractions[token] = round((1 - sumSetFractions) / nUnset, 5);
+            this.enteredFractions[token] = this.rebalanceService.goalFractions[token] * 100;
+          }
+        }
+      } else if (sumUnsetFractions > 0) { // distribute the remaining fraction proportionally
+        const rescaleFactor = (1 - sumSetFractions) / sumUnsetFractions;
+        for (const token of this.airswapService.tokenList) {
+          if (!(this.rebalanceService.goalFractions[token])
+              && this.rebalanceService.currentFractions[token] !== undefined) {
+            this.rebalanceService.goalFractions[token] =
+              round(this.rebalanceService.currentFractions[token] * rescaleFactor, 5);
+            this.enteredFractions[token] = this.rebalanceService.goalFractions[token] * 100;
+          }
         }
       }
     }
@@ -140,11 +166,11 @@ export class RebalanceComponent implements OnInit {
     this.rebalanceService.stopAlgorithm();
   }
 
-  refreshBalances(): void {
+  refreshBalances(): Promise<any> {
     this.rebalanceService.updateCountdown = 0;
-    this.rebalanceService.updateCurrentValues()
+    return this.rebalanceService.updateCurrentValues()
     .then(() => {
-      this.rebalanceService.updateGoalValues();
+      return this.rebalanceService.updateGoalValues();
     });
   }
 

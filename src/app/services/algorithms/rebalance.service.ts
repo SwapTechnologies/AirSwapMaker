@@ -203,7 +203,12 @@ export class RebalanceService {
       if (this.goalFractions[token]) {
         sumFractions += this.goalFractions[token];
       }
-    }return sumFractions;
+    }
+    return sumFractions;
+  }
+
+  sumDeviatesFromOne(): boolean {
+    return Math.abs(this.getSumFractions() - 1) > this.PRECISION_TOLERANCE;
   }
 
   startAlgorithm() {
