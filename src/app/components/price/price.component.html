@@ -120,7 +120,7 @@
           *ngIf="priceService.limitPrices[intent.makerProps.address] &&
           priceService.limitPrices[intent.makerProps.address][intent.takerProps.address]"
           align="end">
-            Set to: {{priceService.limitPrices[intent.makerProps.address][intent.takerProps.address] / (intent.takerProps.powerDecimals / intent.makerProps.powerDecimals)}} {{intent.takerProps.symbol}} per {{intent.makerProps.symbol}} </mat-hint>
+            Set to: {{priceService.limitPrices[intent.makerProps.address][intent.takerProps.address]}} {{intent.takerProps.symbol}} per {{intent.makerProps.symbol}} </mat-hint>
           <button
           mat-icon-button
           matSuffix

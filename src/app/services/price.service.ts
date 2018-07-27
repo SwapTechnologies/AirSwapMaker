@@ -150,7 +150,8 @@ export class PriceService {
         if (makerAmount) {
           // Taker wants to buy a number of makerToken
           answerTakerAmount = this.erc20Service.toFixed(
-            this.limitPrices[makerToken][takerToken] * makerAmount
+            this.limitPrices[makerToken][takerToken] *
+            makerAmount * 10 ** (-makerProps.decimals + takerProps.decimals)
           );
           this.logsService.addLog('Answering to sell for  ' +
             answerTakerAmount * (10 ** (-takerProps.decimals)) + ' ' +
@@ -158,7 +159,8 @@ export class PriceService {
         } else {
           // Taker wants to sell a number of takerToken
           answerMakerAmount = this.erc20Service.toFixed(
-            takerAmount / this.limitPrices[makerToken][takerToken]
+            takerAmount / this.limitPrices[makerToken][takerToken] *
+            10 ** (makerProps.decimals - takerProps.decimals)
           );
           this.logsService.addLog('Answering to buy for  ' +
             answerMakerAmount * (10 ** (-makerProps.decimals)) + ' ' +
@@ -195,10 +197,10 @@ export class PriceService {
 
         // testmode, dont send it
         console.log('answer:', signedOrder);
-        this.airswapService.asProtocol.call(
-          takerAddress, // send order to address who requested it
-          { id: msg.id, jsonrpc: '2.0', result: signedOrder }, // response id should match their `msg.id`
-        );
+        // this.airswapService.asProtocol.call(
+        //   takerAddress, // send order to address who requested it
+        //   { id: msg.id, jsonrpc: '2.0', result: signedOrder }, // response id should match their `msg.id`
+        // );
 
         // store currently openOrder in a mapping for every maker Token
         if (!this.openOrders[makerToken]) {
@@ -333,8 +335,7 @@ export class PriceService {
       for (const intent of this.airswapService.intents) {
         if (intent.makerProps && intent.takerProps
             && this.usdPrices[intent.makerProps.symbol] && this.usdPrices[intent.takerProps.symbol]) {
-          intent.price = this.usdPrices[intent.makerProps.symbol] / this.usdPrices[intent.takerProps.symbol]
-                          * intent.takerProps.powerDecimals / intent.makerProps.powerDecimals;
+          intent.price = this.usdPrices[intent.makerProps.symbol] / this.usdPrices[intent.takerProps.symbol];
         }
       }
     });

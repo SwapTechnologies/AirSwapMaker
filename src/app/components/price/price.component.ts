@@ -33,7 +33,7 @@ export class PriceComponent implements OnInit, OnDestroy {
         const price = this.priceService.getPrice(intent.makerProps.address, intent.takerProps.address);
         if (price) {
           this.enteredPrices[intent.makerProps.address + intent.takerProps.address] =
-            price / intent.takerProps.powerDecimals * intent.makerProps.powerDecimals;
+            price;
         }
 
         const limitAmount = this.priceService.getLimitAmount(intent.makerProps.address, intent.takerProps.address);
@@ -67,7 +67,7 @@ export class PriceComponent implements OnInit, OnDestroy {
       this.priceService.setPrice(
         makerProps.address,
         takerProps.address,
-        price * takerProps.powerDecimals / makerProps.powerDecimals
+        price
       );
     }
   }
