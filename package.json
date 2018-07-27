@@ -29,6 +29,7 @@
     "@angular/animations": "6.0.5",
     "@angular/cdk": "^6.3.3",
     "@angular/material": "^6.3.3",
+    "electron-localshortcut": "^3.1.0",
     "ethers": "^3.0.19",
     "hoek": "^5.0.3",
     "human-standard-token-abi": "^1.0.2",

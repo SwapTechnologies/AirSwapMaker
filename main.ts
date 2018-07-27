@@ -31,7 +31,13 @@ function createWindow() {
     }));
   }
 
-  win.webContents.openDevTools();
+  const electronLocalshortcut = require('electron-localshortcut');
+  electronLocalshortcut.register(win, 'F12', () => {
+    win.webContents.openDevTools();
+  });
+  electronLocalshortcut.register(win, 'F5', () => {
+    win.reload();
+  });
 
   // Emitted when the window is closed.
   win.on('closed', () => {
