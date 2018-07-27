@@ -51,72 +51,118 @@
 
   <mat-card class='liquidBalances'>
     <div><i>Liquid Balances</i></div>
-    <div *ngFor="let token of objectKeys(priceService.balancesLiquidity)">
-      <span *ngIf="priceService.balancesLiquidity[token] && airswapService.tokenProps[token]">
-        {{priceService.balancesLiquidity[token] / airswapService.tokenProps[token].powerDecimals | number: '1.1-8'}} {{airswapService.tokenProps[token].symbol}}
+    <div *ngFor="let makerToken of objectKeys(priceService.balancesLiquidity)">
+      <span *ngIf="priceService.balancesLiquidity[makerToken] && airswapService.tokenProps[makerToken]">
+        <div *ngFor="let takerToken of objectKeys(priceService.balancesLiquidity[makerToken])">
+          <span *ngIf="priceService.balancesLiquidity[makerToken] && airswapService.tokenProps[takerToken]">
+            {{priceService.balancesLiquidity[makerToken][takerToken] / airswapService.tokenProps[makerToken].powerDecimals | number: '1.1-8'}} {{airswapService.tokenProps[makerToken].symbol}} to {{airswapService.tokenProps[takerToken].symbol}}
+          </span>
+        </div>
       </span>
     </div>
   </mat-card>
 
+  <mat-divider></mat-divider>
   <div *ngFor="let intent of airswapService.intents">
-    <div *ngIf="intent.makerProps && intent.takerProps">
-      <mat-form-field class="priceInput">
-        <input
-        matInput
-        number
-        (keydown.enter)="setPrice(
-          intent.makerProps,
-          intent.takerProps,
-          enteredPrices[intent.makerProps.address+intent.takerProps.address]
-        )"
-        placeholder="Price for {{intent.takerProps.symbol}} per {{intent.makerProps.symbol}}"
-        [(ngModel)]='enteredPrices[intent.makerProps.address+intent.takerProps.address]'>
-        <mat-hint align="start">CryptoCompare Price: {{intent.price | number: '1.1-8'}} {{intent.takerProps.symbol}} per {{intent.makerProps.symbol}} </mat-hint>
-        <mat-hint
-        *ngIf="priceService.limitPrices[intent.makerProps.address] &&
-        priceService.limitPrices[intent.makerProps.address][intent.takerProps.address]"
-        align="end">
-          Set to: {{priceService.limitPrices[intent.makerProps.address][intent.takerProps.address] / (intent.takerProps.powerDecimals / intent.makerProps.powerDecimals)}} {{intent.takerProps.symbol}} per {{intent.makerProps.symbol}} </mat-hint>
-        <button
-        mat-icon-button
-        matSuffix
-        matTooltip='Set Price'
-        color="primary"
-        aria-label="Set Price"
-        [disabled]='!priceValid(enteredPrices[intent.makerProps.address+intent.takerProps.address])
-                    || priceService.algorithmRunning'
-        (click)="setPrice(
-          intent.makerProps,
-          intent.takerProps,
-          enteredPrices[intent.makerProps.address+intent.takerProps.address]
-        )">
-          <mat-icon>fast_forward</mat-icon>
-        </button>
-        <button
+    <div *ngIf="intent.makerProps && intent.takerProps" class="intentContainer">
+      <div class="intentName">
+        Sell {{intent.makerProps.symbol}} for {{intent.takerProps.symbol}}
+      </div>
+      <div class="intentInputs">
+        <mat-form-field class="amountInput">
+          <input
+          matInput
+          number
+          (keydown.enter)="setAmount(
+            intent.makerProps,
+            intent.takerProps,
+            enteredAmounts[intent.makerProps.address+intent.takerProps.address]
+          )"
+          [disabled]="priceService.algorithmRunning"
+          placeholder="Max. Amount of {{intent.makerProps.symbol}} you want to sell"
+          [(ngModel)]='enteredAmounts[intent.makerProps.address+intent.takerProps.address]'>
+          <mat-hint
+          *ngIf="priceService.getLimitAmount(intent.makerProps.address, intent.takerProps.address)"
+          align="end">
+          Set to:
+            {{priceService.getLimitAmount(intent.makerProps.address, intent.takerProps.address) / intent.makerProps.powerDecimals}}
+             {{intent.makerProps.symbol}} </mat-hint>
+          <button
           mat-icon-button
           matSuffix
+          matTooltip='Set Amount'
           color="primary"
+          aria-label="Set Amount"
+          [disabled]='!(enteredAmounts[intent.makerProps.address+intent.takerProps.address] >= 0)
+                      || priceService.algorithmRunning'
+          (click)="setAmount(
+            intent.makerProps,
+            intent.takerProps,
+            enteredAmounts[intent.makerProps.address+intent.takerProps.address]
+          )">
+            <mat-icon>fast_forward</mat-icon>
+          </button>
+        </mat-form-field>
+        <mat-form-field class="priceInput">
+          <input
+          matInput
+          number
+          (keydown.enter)="setPrice(
+            intent.makerProps,
+            intent.takerProps,
+            enteredPrices[intent.makerProps.address+intent.takerProps.address]
+          )"
+          [disabled]="priceService.algorithmRunning"
+          placeholder="Price in {{intent.takerProps.symbol}} per {{intent.makerProps.symbol}}"
+          [(ngModel)]='enteredPrices[intent.makerProps.address+intent.takerProps.address]'>
+          <mat-hint align="start">CryptoCompare Price: {{intent.price | number: '1.1-8'}} {{intent.takerProps.symbol}} per {{intent.makerProps.symbol}} </mat-hint>
+          <mat-hint
           *ngIf="priceService.limitPrices[intent.makerProps.address] &&
           priceService.limitPrices[intent.makerProps.address][intent.takerProps.address]"
-          matTooltip="Stop offering tokens"
-          (click)="removePrice(
+          align="end">
+            Set to: {{priceService.limitPrices[intent.makerProps.address][intent.takerProps.address] / (intent.takerProps.powerDecimals / intent.makerProps.powerDecimals)}} {{intent.takerProps.symbol}} per {{intent.makerProps.symbol}} </mat-hint>
+          <button
+          mat-icon-button
+          matSuffix
+          matTooltip='Set Price'
+          color="primary"
+          aria-label="Set Price"
+          [disabled]='!priceValid(enteredPrices[intent.makerProps.address+intent.takerProps.address])
+                      || priceService.algorithmRunning'
+          (click)="setPrice(
             intent.makerProps,
-            intent.takerProps)"
-          [disabled]='priceService.algorithmRunning'>
-          <mat-icon>clear</mat-icon>
-        </button>
-        <button
-        mat-icon-button
-        matSuffix
-        matTooltip='Show Options'
-        color="primary"
-        aria-label="Show Options"
-        (click)="showOptions(
-          intent.makerProps,
-          intent.takerProps)">
-          <mat-icon>more_vert</mat-icon>
-        </button>
-      </mat-form-field>
+            intent.takerProps,
+            enteredPrices[intent.makerProps.address+intent.takerProps.address]
+          )">
+            <mat-icon>fast_forward</mat-icon>
+          </button>
+          <button
+            mat-icon-button
+            matSuffix
+            color="primary"
+            *ngIf="priceService.limitPrices[intent.makerProps.address] &&
+            priceService.limitPrices[intent.makerProps.address][intent.takerProps.address]"
+            matTooltip="Stop buying {{intent.takerProps.symbol}}"
+            (click)="removePrice(
+              intent.makerProps,
+              intent.takerProps)"
+            [disabled]='priceService.algorithmRunning'>
+            <mat-icon>clear</mat-icon>
+          </button>
+          <button
+          mat-icon-button
+          matSuffix
+          matTooltip='Show Options'
+          color="primary"
+          aria-label="Show Options"
+          (click)="showOptions(
+            intent.makerProps,
+            intent.takerProps)">
+            <mat-icon>more_vert</mat-icon>
+          </button>
+        </mat-form-field>
+      </div>
     </div>
+    <mat-divider></mat-divider>
   </div>
 </div>

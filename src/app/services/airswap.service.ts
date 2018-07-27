@@ -247,4 +247,12 @@ export class AirswapService {
       });
     }
   }
+
+  constructIntent(makerAddress, takerAddress): any {
+    return {
+      'makerToken': makerAddress.toLowerCase(),
+      'takerToken': takerAddress.toLowerCase(),
+      'role': 'maker'
+    }
+  }
 }

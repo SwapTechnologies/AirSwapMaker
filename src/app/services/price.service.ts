@@ -42,7 +42,7 @@ export class PriceService {
   }
 
   startContinuousPriceBalanceUpdating() {
-    if (!this.priceUpdater) {
+    if (!this.priceUpdater) { // if the price updater is not running, start it to update prices every 30s
       this.priceUpdater = TimerObservable.create(0, 100)
       .subscribe( () => {
         this.updateCountdown = this.updateCountdown + 100 / 30000 * 100;
@@ -108,6 +108,16 @@ export class PriceService {
         return;
       }
 
+      if (!this.limitPrices[makerToken] || !this.limitPrices[makerToken][takerToken]) {
+        // no price set for pair
+        return;
+      }
+
+      if (!this.balancesLiquidity[makerToken] || !this.balancesLiquidity[makerToken][takerToken]) {
+        // no liquidity for pair
+        return;
+      }
+
       // get current balances of the taker and the maker
       let takerMakerBalance = 0;
       let takerTakerBalance = 0;
@@ -137,90 +147,90 @@ export class PriceService {
         let answerMakerAmount = makerAmount;
         let answerTakerAmount = takerAmount;
 
-        // check if a limit price is set for the token pair
-        if (this.limitPrices[makerToken] && this.limitPrices[makerToken][takerToken]) {
-          if (makerAmount) {
-            // Taker wants to buy a number of makerToken
-            answerTakerAmount = this.erc20Service.toFixed(
-              this.limitPrices[makerToken][takerToken] * makerAmount
-            );
-            this.logsService.addLog('Answering to sell for  ' +
-              answerTakerAmount * (10 ** (-takerProps.decimals)) + ' ' +
-              takerProps.symbol);
-          } else {
-            // Taker wants to sell a number of takerToken
-            answerMakerAmount = this.erc20Service.toFixed(
-              takerAmount / this.limitPrices[makerToken][takerToken]
-            );
-            this.logsService.addLog('Answering to buy for  ' +
-              answerMakerAmount * (10 ** (-makerProps.decimals)) + ' ' +
-              makerProps.symbol);
-          }
-
-          // check if both parties have enough balance
-          if (takerTakerBalance < Number(answerTakerAmount)) {
-            this.logsService.addLog('Cancelled. Counterparty only has ' +
-              takerTakerBalance * (10 ** (-takerProps.decimals)) + ' ' +
-              takerProps.symbol);
-            return;
-          }
-
-          if (this.balancesLiquidity[makerToken] < Number(answerMakerAmount)) {
-            this.logsService.addLog('Cancelled. Your liquid balance is only  ' +
-            this.balancesLiquidity[makerToken] * (10 ** (-makerProps.decimals)) + ' ' +
-              makerProps.symbol);
-            return;
-          }
-
-          const expiration = Math.round(new Date().getTime() / 1000) + this.expirationTime;
-          const nonce = String((Math.random() * 100000).toFixed());
-          const signedOrder = this.airswapService.asProtocol.signOrder({
-            makerAddress: this.airswapService.asProtocol.wallet.address.toLowerCase(),
-            makerAmount: answerMakerAmount.toString(),
-            makerToken,
-            takerAddress,
-            takerAmount: answerTakerAmount.toString(),
-            takerToken,
-            expiration,
-            nonce,
-          });
-
-          // testmode, dont send it
-          console.log('answer:', signedOrder);
-          this.airswapService.asProtocol.call(
-            takerAddress, // send order to address who requested it
-            { id: msg.id, jsonrpc: '2.0', result: signedOrder }, // response id should match their `msg.id`
+        if (makerAmount) {
+          // Taker wants to buy a number of makerToken
+          answerTakerAmount = this.erc20Service.toFixed(
+            this.limitPrices[makerToken][takerToken] * makerAmount
           );
-
-          // store currently openOrder in a mapping for every maker Token
-          if (!this.openOrders[makerToken]) {
-            this.openOrders[makerToken] = {};
-          }
-          const signature = signedOrder.v + signedOrder.r + signedOrder.s;
-          const expirationTimer = TimerObservable.create(0, 1000)
-          .subscribe( () => {
-            const currentTime = Math.round(new Date().getTime() / 1000);
-            // find a way to check if this transaction was taken and mined
-            if (currentTime > expiration) {
-              // when expiration timer is up, end the timer and delete the order
-              // update the balances and if a algorithm is running notify it
-              // that something may have updated
-              expirationTimer.unsubscribe();
-              if (this.openOrders[makerToken][signature]) {
-                delete this.openOrders[makerToken][signature];
-                this.getBalancesAndPrices()
-                .then(() => {
-                  this.updateBalances(); // calculate the new liquid balances
-                  if (this.algorithmRunning) {
-                    this.algorithmCallbackOnUpdate();
-                  }
-                });
-              }
-            }
-          });
-          this.openOrders[makerToken][signature] = signedOrder;
-          this.updateBalances();
+          this.logsService.addLog('Answering to sell for  ' +
+            answerTakerAmount * (10 ** (-takerProps.decimals)) + ' ' +
+            takerProps.symbol);
+        } else {
+          // Taker wants to sell a number of takerToken
+          answerMakerAmount = this.erc20Service.toFixed(
+            takerAmount / this.limitPrices[makerToken][takerToken]
+          );
+          this.logsService.addLog('Answering to buy for  ' +
+            answerMakerAmount * (10 ** (-makerProps.decimals)) + ' ' +
+            makerProps.symbol);
         }
+
+        // check if both parties have enough balance
+        if (takerTakerBalance < Number(answerTakerAmount)) {
+          this.logsService.addLog('Cancelled. Counterparty only has ' +
+            takerTakerBalance * (10 ** (-takerProps.decimals)) + ' ' +
+            takerProps.symbol);
+          return;
+        }
+
+        if (this.balancesLiquidity[makerToken][takerToken] < Number(answerMakerAmount)) {
+          this.logsService.addLog('Cancelled. Your liquid balance is only  ' +
+          this.balancesLiquidity[makerToken] * (10 ** (-makerProps.decimals)) + ' ' +
+            makerProps.symbol);
+          return;
+        }
+
+        const expiration = Math.round(new Date().getTime() / 1000) + this.expirationTime;
+        const nonce = String((Math.random() * 100000).toFixed());
+        const signedOrder = this.airswapService.asProtocol.signOrder({
+          makerAddress: this.airswapService.asProtocol.wallet.address.toLowerCase(),
+          makerAmount: answerMakerAmount.toString(),
+          makerToken,
+          takerAddress,
+          takerAmount: answerTakerAmount.toString(),
+          takerToken,
+          expiration,
+          nonce,
+        });
+
+        // testmode, dont send it
+        console.log('answer:', signedOrder);
+        this.airswapService.asProtocol.call(
+          takerAddress, // send order to address who requested it
+          { id: msg.id, jsonrpc: '2.0', result: signedOrder }, // response id should match their `msg.id`
+        );
+
+        // store currently openOrder in a mapping for every maker Token
+        if (!this.openOrders[makerToken]) {
+          this.openOrders[makerToken] = {};
+          if(!this.openOrders[makerToken][takerToken]) {
+            this.openOrders[makerToken][takerToken] = {};
+          }
+        }
+        const signature = signedOrder.v + signedOrder.r + signedOrder.s;
+        const expirationTimer = TimerObservable.create(0, 1000)
+        .subscribe( () => {
+          const currentTime = Math.round(new Date().getTime() / 1000);
+          // find a way to check if this transaction was taken and mined
+          if (currentTime > expiration) {
+            // when expiration timer is up, end the timer and delete the order
+            // update the balances and if a algorithm is running notify it
+            // that something may have updated
+            expirationTimer.unsubscribe();
+            if (this.openOrders[makerToken][takerToken][signature]) {
+              delete this.openOrders[makerToken][takerToken][signature];
+              this.getBalancesAndPrices()
+              .then(() => {
+                this.updateLiquidity(); // calculate the new liquid balances
+                if (this.algorithmRunning) {
+                  this.algorithmCallbackOnUpdate();
+                }
+              });
+            }
+          }
+        });
+        this.openOrders[makerToken][signature] = signedOrder;
+        this.updateLiquidity();
       });
     });
   }
@@ -260,12 +270,35 @@ export class PriceService {
     });
   }
 
-  setPrice(makerAddress: any, takerAddress: any, price: number) {
+  setPrice(makerAddress: string, takerAddress: string, price: number) {
     if (price > 0) {
       if (!this.limitPrices[makerAddress]) {
         this.limitPrices[makerAddress] = {};
       }
       this.limitPrices[makerAddress][takerAddress] = price;
+    }
+  }
+
+  getPrice(makerAddress: string, takerAddress: string): number {
+    if (this.limitPrices[makerAddress]) {
+      return this.limitPrices[makerAddress][takerAddress];
+    } else {
+      return null;
+    }
+  }
+
+  setLimitAmount(makerAddress: string, takerAddress: string, amount: number) {
+    if (!this.balancesLimits[makerAddress]) {
+      this.balancesLimits[makerAddress] = {};
+    }
+    this.balancesLimits[makerAddress][takerAddress] = amount;
+  }
+
+  getLimitAmount(makerAddress: string, takerAddress: string): number {
+    if (this.balancesLimits[makerAddress]) {
+      return this.balancesLimits[makerAddress][takerAddress];
+    } else {
+      return null;
     }
   }
 
@@ -321,23 +354,34 @@ export class PriceService {
     }
     return Promise.all(promiseList).then(() => {
       this.balances = newBalances;
-      this.updateBalances();
+      this.updateLiquidity();
     });
   }
 
-  updateBalances(): void {
+  updateLiquidity(): void {
     const balancesLiquidity = {};
-    for (const token of this.airswapService.tokenList) {
-      // liquid balance cant be more than the actual balance, limit cant be higher than the actual balance
-      if (this.balances[token] !== undefined && this.balancesLimits[token] !== undefined) {
-        balancesLiquidity[token] = Math.min(this.balancesLimits[token], this.balances[token]);
-      }
+    for (const makerToken in this.balancesLimits) {
+      if (this.balancesLimits[makerToken]) {
+        // check all tokens you are market making
+        if (!balancesLiquidity[makerToken]) {
+          balancesLiquidity[makerToken] = {};
+        }
+        for (const takerToken in this.balancesLimits[makerToken]) {
+          if (this.balances[makerToken] !== undefined && this.balancesLimits[makerToken][takerToken] !== undefined) {
+            // check all pairs you are market making the token with
+            balancesLiquidity[makerToken][takerToken] = Math.min(
+              this.balancesLimits[makerToken][takerToken],
+              this.balances[makerToken]
+            );
 
-      // if there are open orders takers can take, consider them as taken while they are open
-      if (this.openOrders[token]) {
-        for (const signature in this.openOrders[token]) {
-          if (this.openOrders[token][signature]) {
-            balancesLiquidity[token] -= this.openOrders[token][signature].makerAmount;
+            if (this.openOrders[makerToken] && this.openOrders[makerToken][takerToken]) {
+              for (const signature in this.openOrders[makerToken][takerToken]) {
+                if (this.openOrders[makerToken][takerToken][signature]) {
+                  // check all open orders you have sent out for that specific pair
+                  balancesLiquidity[makerToken][takerToken] -= this.openOrders[makerToken][takerToken][signature].makerAmount;
+                }
+              }
+            }
           }
         }
       }

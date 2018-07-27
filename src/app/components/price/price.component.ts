@@ -13,6 +13,7 @@ import { TimerObservable } from 'rxjs/observable/TimerObservable';
 export class PriceComponent implements OnInit, OnDestroy {
 
   public enteredPrices = {};
+  public enteredAmounts = {};
 
   public enteredExpiration: number;
   objectKeys = Object.keys;
@@ -26,17 +27,26 @@ export class PriceComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+    // check if prices and amount limits are set -> show them on display
     for (const intent of this.airswapService.intents) {
       if (intent.makerProps && intent.takerProps) {
-        if (this.priceService.limitPrices[intent.makerProps.address]
-            && this.priceService.limitPrices[intent.makerProps.address][intent.takerProps.address]) {
+        const price = this.priceService.getPrice(intent.makerProps.address, intent.takerProps.address);
+        if (price) {
           this.enteredPrices[intent.makerProps.address + intent.takerProps.address] =
-            this.priceService.limitPrices[intent.makerProps.address][intent.takerProps.address]
-            * 10 ** (intent.makerProps.decimals - intent.takerProps.decimals);
+            price / intent.takerProps.powerDecimals * intent.makerProps.powerDecimals;
+        }
+
+        const limitAmount = this.priceService.getLimitAmount(intent.makerProps.address, intent.takerProps.address);
+        if (limitAmount) {
+          this.enteredAmounts[intent.makerProps.address + intent.takerProps.address] =
+            limitAmount / intent.makerProps.powerDecimals;
         }
       }
     }
+
+     // always update prices when component is loaded and no algorithm running
     if (!this.priceService.algorithmRunning) {
+      this.priceService.updateCountdown = 100;
       this.priceService.startContinuousPriceBalanceUpdating();
     }
   }
@@ -54,12 +64,21 @@ export class PriceComponent implements OnInit, OnDestroy {
 
   setPrice(makerProps: any, takerProps: any, price: number) {
     if (this.priceValid(price)) {
-      if (!this.priceService.limitPrices[makerProps.address]) {
-        this.priceService.limitPrices[makerProps.address] = {};
-      }
-      this.priceService.limitPrices[makerProps.address][takerProps.address] =
-        price * 10 ** (takerProps.decimals - makerProps.decimals);
-      this.priceService.setPricingLogic();
+      this.priceService.setPrice(
+        makerProps.address,
+        takerProps.address,
+        price * takerProps.powerDecimals / makerProps.powerDecimals
+      );
+    }
+  }
+
+  setAmount(makerProps: any, takerProps: any, amount: number) {
+    if (amount >= 0) {
+      this.priceService.setLimitAmount(
+        makerProps.address,
+        takerProps.address,
+        amount * makerProps.powerDecimals);
+      this.priceService.updateLiquidity();
     }
   }
 
