@@ -205,7 +205,7 @@ export class PriceService {
         // store currently openOrder in a mapping for every maker Token
         if (!this.openOrders[makerToken]) {
           this.openOrders[makerToken] = {};
-          if(!this.openOrders[makerToken][takerToken]) {
+          if (!this.openOrders[makerToken][takerToken]) {
             this.openOrders[makerToken][takerToken] = {};
           }
         }
@@ -293,7 +293,7 @@ export class PriceService {
     if (!this.balancesLimits[makerAddress]) {
       this.balancesLimits[makerAddress] = {};
     }
-    this.balancesLimits[makerAddress][takerAddress] = amount;
+    this.balancesLimits[makerAddress][takerAddress] = Math.floor(amount);
   }
 
   getLimitAmount(makerAddress: string, takerAddress: string): number {

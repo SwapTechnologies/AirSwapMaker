@@ -69,9 +69,13 @@
   <mat-card class='liquidBalances' *ngIf="objectKeys(rebalanceService.deltaBalances).length > 1">
     <div *ngIf="objectKeys(priceService.balancesLiquidity).length > 0">
       <div><i>Liquid Balances</i></div>
-      <div *ngFor='let token of objectKeys(priceService.balancesLiquidity)'>
-        <span *ngIf='priceService.balancesLiquidity[token] && airswapService.tokenProps[token]'>
-          {{priceService.balancesLiquidity[token] / airswapService.tokenProps[token].powerDecimals | number: '1.1-8'}} {{airswapService.tokenProps[token].symbol}}
+      <div *ngFor="let makerToken of objectKeys(priceService.balancesLiquidity)">
+        <span *ngIf="priceService.balancesLiquidity[makerToken] && airswapService.tokenProps[makerToken]">
+          <div *ngFor="let takerToken of objectKeys(priceService.balancesLiquidity[makerToken])">
+            <span *ngIf="priceService.balancesLiquidity[makerToken] && airswapService.tokenProps[takerToken]">
+              {{priceService.balancesLiquidity[makerToken][takerToken] / airswapService.tokenProps[makerToken].powerDecimals | number: '1.1-8'}} {{airswapService.tokenProps[makerToken].symbol}} to {{airswapService.tokenProps[takerToken].symbol}}
+            </span>
+          </div>
         </span>
       </div>
       <br>

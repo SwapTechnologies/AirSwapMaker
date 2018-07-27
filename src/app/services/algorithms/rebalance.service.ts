@@ -44,6 +44,7 @@ export class RebalanceService {
   ) { }
 
   updateCurrentValues(): Promise<any> {
+    // check your balances, and current prices and  calculate the portfolio value
     return this.priceService.getBalancesAndPrices()
     .then(() => {
       let currentTotalPortfolioValue = 0;
@@ -55,13 +56,17 @@ export class RebalanceService {
       }
       this.currentTotalPortfolioValue = currentTotalPortfolioValue;
 
-
+      // calculate the value fractions of every token
       const currentFractions = {};
       currentFractions[AppConfig.ethAddress] = 0; // initialize always the eth fraction
-      for (const token of this.airswapService.tokenList) {
-        currentFractions[token] = this.priceService.balances[token] /
-        this.airswapService.tokenProps[token].powerDecimals *
-        this.priceService.usdPricesByToken[token] / this.currentTotalPortfolioValue;
+      for (const token in this.priceService.balances) {
+        if (this.priceService.balances[token] !== undefined
+            && this.airswapService.tokenProps[token]
+            && this.priceService.usdPricesByToken[token]) {
+          currentFractions[token] = this.priceService.balances[token] /
+          this.airswapService.tokenProps[token].powerDecimals *
+          this.priceService.usdPricesByToken[token] / this.currentTotalPortfolioValue;
+        }
       }
 
       // count weth fraction additional to eth fraction
@@ -76,7 +81,10 @@ export class RebalanceService {
   updateGoalValues(): Promise<any> {
     const goalBalances = {};
     const deltaBalances = {};
-    for (const token of this.airswapService.tokenList) {
+    // for a given set of fractions you want to achieve, calculate
+    // the amounts of token you need to buy and sell
+    // and store those values as goalBalances and deltaBalances (what has to change)
+    for (const token in this.goalFractions) {
       if (token === AppConfig.wethAddress) {
         continue; // weth is included in currentFraction, goalBalances of eth
       }
@@ -87,7 +95,7 @@ export class RebalanceService {
           this.priceService.usdPricesByToken[token] *
           this.airswapService.tokenProps[token].powerDecimals;
 
-        deltaBalances[token] = goalBalances[token] - this.priceService.balances[token];
+        deltaBalances[token] = Math.floor(goalBalances[token] - this.priceService.balances[token]);
       }
     }
     if (this.priceService.balances[AppConfig.wethAddress] !== undefined) {
@@ -104,8 +112,10 @@ export class RebalanceService {
   }
 
   calculateNeededWeth() {
+    // given a list of delta balances, calculate how much weth you need for this currently
     let amountWethSelling = 0;
-    for (const token of this.airswapService.tokenList) {
+    for (const token in this.deltaBalances) {
+      // ignore eth and weth
       if (token !== AppConfig.wethAddress
           && token !== AppConfig.ethAddress
           && this.deltaBalances[token]
@@ -126,7 +136,7 @@ export class RebalanceService {
 
   calculateNeededIntents(): Promise<any> {
     let neededIntents = 0;
-    for (const token of this.airswapService.tokenList) {
+    for (const token in this.deltaBalances) {
       if (token !== AppConfig.wethAddress
           && token !== AppConfig.ethAddress
           && this.deltaBalances[token]
@@ -147,59 +157,9 @@ export class RebalanceService {
     });
   }
 
-  stopAlgorithm() {
-    if (this.updateTimer) {
-      this.updateTimer.unsubscribe();
-      this.updateTimer = null;
-    }
-    this.priceService.stopAlgorithm();
-    this.priceService.limitPrices = {}; // remove all pricing
-    this.algorithmIsRunning = false;
-    this.priceService.updateCountdown = 100;
-    this.priceService.startContinuousPriceBalanceUpdating();
-  }
-
-  updateIteration() {
-    this.updateCountdown = 0;
-    // method that is called as refresher for the algorithm
-
-    // update current $ prices, balances, calculate portfolio value and current fractions
-    this.updateCurrentValues()
-    .then(() => {
-      // determine the goal balances and deltas with the given goal fractions
-      return this.updateGoalValues();
-    }).then(() => {
-      // check if the algorithm can still run without problems
-      if (!this.enoughIntents) {
-        this.stopAlgorithm();
-      }
-
-      for (const intent of this.airswapService.intents) {
-        console.log('set price to buy ', intent.makerProps.symbol,
-          ' for ', intent.takerProps.symbol, ' to ', intent.price, ' ',
-          intent.takerProps.symbol, '/', intent.makerProps.symbol);
-        this.priceService.setPrice(intent.makerToken, intent.takerToken, intent.price);
-      }
-
-      for (const token of this.airswapService.tokenList) {
-        if (token !== AppConfig.wethAddress) { // treat weth seperately
-          if (this.deltaBalances[token] < 0) {
-            // sell token up to amount:
-            this.priceService.balancesLimits[token] = -this.deltaBalances[token];
-          }
-        }
-      }
-      this.priceService.balancesLimits[AppConfig.wethAddress] = this.amountWethSelling;
-      this.priceService.updateBalances();
-    });
-
-    // refresh internally the limit prices to achieve goal distribution
-    // update the prices according to the current prices
-  }
-
   getSumFractions(): number {
     let sumFractions = 0;
-    for (const token of this.airswapService.tokenList) {
+    for (const token in this.goalFractions) {
       if (this.goalFractions[token]) {
         sumFractions += this.goalFractions[token];
       }
@@ -223,24 +183,26 @@ export class RebalanceService {
       // setIntents according to the delta settings
       const intentList = [];
 
-      for (const token of this.airswapService.tokenList) {
+      for (const token in this.deltaBalances) {
         if (token !== AppConfig.wethAddress
             && token !== AppConfig.ethAddress
             && this.deltaBalances[token]) {
           if (this.deltaBalances[token] > 0) {
             // buy token for weth
-            intentList.push({
-              'makerToken': AppConfig.wethAddress,
-              'takerToken': token.toLowerCase(),
-              'role': 'maker'
-            });
+            intentList.push(
+              this.airswapService.constructIntent(
+                AppConfig.wethAddress,
+                token
+              )
+            );
           } else if (this.deltaBalances[token] < 0) {
             // sell token for eth
-            intentList.push({
-              'makerToken': token.toLowerCase(),
-              'takerToken': AppConfig.ethAddress,
-              'role': 'maker'
-            });
+            intentList.push(
+              this.airswapService.constructIntent(
+                token,
+                AppConfig.ethAddress
+              )
+            );
           }
         }
       }
@@ -265,5 +227,65 @@ export class RebalanceService {
         });
       });
     });
+  }
+
+  updateIteration() {
+    this.updateCountdown = 0;
+    // method that is called as refresher for the algorithm
+
+    // update current $ prices, balances, calculate portfolio value and current fractions
+    this.updateCurrentValues()
+    .then(() => {
+      // determine the goal balances and deltas with the given goal fractions
+      return this.updateGoalValues();
+    }).then(() => {
+      // check if the algorithm can still run without problems
+      if (!this.enoughIntents) {
+        this.stopAlgorithm();
+      }
+
+      for (const intent of this.airswapService.intents) {
+        console.log('set price to buy ', intent.makerProps.symbol,
+          ' for ', intent.takerProps.symbol, ' to ', intent.price, ' ',
+          intent.takerProps.symbol, '/', intent.makerProps.symbol);
+        this.priceService.setPrice(intent.makerToken, intent.takerToken, intent.price);
+
+        if (intent.takerToken === AppConfig.ethAddress
+            && this.deltaBalances[intent.makerToken] < 0) {
+          // selling a token for eth
+          this.priceService.setLimitAmount(
+            intent.makerToken,
+            intent.takerToken,
+            -this.deltaBalances[intent.makerToken]
+          );
+        } else if (intent.makerToken === AppConfig.wethAddress
+                   && this.deltaBalances[intent.takerToken] > 0) {
+          // you are buying a token for WETH, set the limit of the pair weth, token in terms of weth
+          // also keep in mind to switch from taker decimals to maker decimals
+          this.priceService.setLimitAmount(
+            intent.makerToken,
+            intent.takerToken,
+            this.deltaBalances[intent.takerToken]
+            / this.airswapService.tokenProps[intent.takerToken].powerDecimals
+            * this.airswapService.tokenProps[intent.makerToken].powerDecimals
+            / this.priceService.getPrice(intent.makerToken, intent.takerToken)
+          );
+        }
+        // other intents do not lead to a limit amount
+      }
+      this.priceService.updateLiquidity();
+    });
+  }
+
+  stopAlgorithm() {
+    if (this.updateTimer) {
+      this.updateTimer.unsubscribe();
+      this.updateTimer = null;
+    }
+    this.priceService.stopAlgorithm();
+    this.priceService.limitPrices = {}; // remove all pricing
+    this.algorithmIsRunning = false;
+    this.priceService.updateCountdown = 100;
+    this.priceService.startContinuousPriceBalanceUpdating();
   }
 }
