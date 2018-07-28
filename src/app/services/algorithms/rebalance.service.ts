@@ -38,6 +38,8 @@ export class RebalanceService {
 
   public updateCountdown = 100;
 
+  public continuousUpdatePrices = true;
+
   constructor(
     private airswapService: AirswapService,
     private priceService: PriceService,
@@ -245,10 +247,9 @@ export class RebalanceService {
       }
 
       for (const intent of this.airswapService.intents) {
-        console.log('set price to buy ', intent.makerProps.symbol,
-          ' for ', intent.takerProps.symbol, ' to ', intent.price, ' ',
-          intent.takerProps.symbol, '/', intent.makerProps.symbol);
-        this.priceService.setPrice(intent.makerToken, intent.takerToken, intent.price);
+        if (this.continuousUpdatePrices) {
+          this.priceService.setPrice(intent.makerToken, intent.takerToken, this.priceModifier * intent.price);
+        }
 
         if (intent.takerToken === AppConfig.ethAddress
             && this.deltaBalances[intent.makerToken] < 0) {

@@ -169,7 +169,7 @@
                 APPROVE {{tokenSymbol(token)}}
               </button>
               <span *ngIf="airswapService.tokensInApprovalPending[token]">
-                Send Approval Tx: <a href='https://etherscan.io/tx/{{airswapService.tokensInApprovalPending[token]}}' target='_blank'>
+                Send Approval Tx: <a href='{{etherscanAddress}}/tx/{{airswapService.tokensInApprovalPending[token]}}' target='_blank'>
                   <mat-icon>exit_to_app</mat-icon> {{airswapService.tokensInApprovalPending[token]}}
                 </a>
               </span>

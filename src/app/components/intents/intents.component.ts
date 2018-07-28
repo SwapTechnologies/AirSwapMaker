@@ -49,6 +49,7 @@ export class IntentsComponent implements OnInit {
   public approveHashes = {};
 
   public provider;
+  public etherscanAddress = AppConfig.etherscanAddress;
 
   constructor(
     public airswapService: AirswapService,

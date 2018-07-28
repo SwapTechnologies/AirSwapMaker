@@ -1,21 +1,51 @@
 <div>
-  <mat-form-field class='expirationInput'>
-    <input
-    matInput
-    type='number'
-    (keydown.enter)='setExpiration()'
-    placeholder='Set the expiration time for an given offer (in minutes)'
-    [(ngModel)]='enteredExpiration'>
-    <mat-hint align='end'>Set expiration: {{priceService.expirationTime / 60 | number: '1.1-2' }} </mat-hint>
-    <button
-      mat-icon-button
-      matSuffix
-      matTooltip='Set Expiration Time'
-      color='primary'
-      aria-label='Set Expiration Time'
-      [disabled]='!(enteredExpiration > 0)'
-      (click)='setExpiration()'>
-        <mat-icon>fast_forward</mat-icon>
-      </button>
-  </mat-form-field>
+  <div class='expirationInput'>
+    <mat-form-field>
+      <input
+      matInput
+      type='number'
+      (keydown.enter)='setExpiration()'
+      placeholder='Set the expiration time for an given offer (in minutes)'
+      [(ngModel)]='enteredExpiration'>
+      <mat-hint align='end'>Set expiration: {{priceService.expirationTime / 60 | number: '1.1-2' }} min</mat-hint>
+      <button
+        mat-icon-button
+        matSuffix
+        matTooltip='Set Expiration Time'
+        color='primary'
+        aria-label='Set Expiration Time'
+        [disabled]='!(enteredExpiration > 0)'
+        (click)='setExpiration()'>
+          <mat-icon>fast_forward</mat-icon>
+        </button>
+    </mat-form-field>
+  </div>
+  <div class='priceModifierInput'>
+    <mat-form-field>
+      <input
+      matInput
+      type='number'
+      (keydown.enter)='setPriceModifier()'
+      placeholder='Increase price by the set percentage'
+      [(ngModel)]='enteredPriceModifier'>
+      <mat-hint align='end'>Modifier is set to: {{(rebalanceService.priceModifier - 1) * 100 | number: '1.1-2' }} %</mat-hint>
+      <button
+        mat-icon-button
+        matSuffix
+        matTooltip='Set Price Modifier'
+        color='primary'
+        aria-label='Set Price Modifier'
+        (click)='setPriceModifier()'>
+          <mat-icon>fast_forward</mat-icon>
+        </button>
+    </mat-form-field>
+  </div>
+  <div class='keepPriceUpdatingInput'>
+    <mat-slide-toggle
+    matTooltip="Continuously adjust your prices according to the price feed"
+    color="primary"
+    [checked]="rebalanceService.continuousUpdatePrices">
+      Continuously update prices
+    </mat-slide-toggle>
+  </div>
 </div>

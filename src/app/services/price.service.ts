@@ -29,6 +29,9 @@ export class PriceService {
   public algorithmRunning = false;
   public blacklistAddress = {};
 
+  public listeningToFilledEvent = false;
+  public filledEventTopic = '0xe59c5e56d85b2124f5e7f82cb5fcc6d28a4a241a9bdd732704ac9d3b6bfc98ab';
+
   public algorithmCallbackOnUpdate = () => {};
 
 
@@ -73,6 +76,43 @@ export class PriceService {
 
   stopAlgorithm() {
     this.algorithmRunning = false;
+  }
+
+  listenToFilledEvents() {
+    this.listeningToFilledEvent = true;
+    console.log('Start listening on chain for Filled Events');
+    this.airswapService.asProtocol.provider
+    .on([this.filledEventTopic], (log) => {
+      console.log('FilledEvent triggered', log);
+      // filled event triggered, typical event:
+      // { blockNumber: 6040052,
+      //   blockHash: '0xa28581505c9ae495c7aa83d44d557a40dee62d1af954e68ccfa81d1ca9d3db99',
+      //   transactionIndex: 94,
+      //   removed: false,
+      //   address: '0x8fd3121013A07C57f0D69646E86E7a4880b467b7',
+      //   data: '0x0000000000000000000000000000000000000000000000000000000000000
+      //     1f4000000000000000000000000063b30ca02db00d7172fe2f4db35d5f3d58a6f53
+      //     0000000000000000000000000000000000000000000000000084170354bfbfff
+      //     000000000000000000000000000000000000000000000000000000005b5b407e
+      //     0000000000000000000000000000000000000000000000000000000003bfe02b',
+      //   topics:
+      //    [ '0xe59c5e56d85b2124f5e7f82cb5fcc6d28a4a241a9bdd732704ac9d3b6bfc98ab',
+      //      '0x00000000000000000000000069c2983f1289be1297eed90b404abf902c8403c6',
+      //      '0x000000000000000000000000aec2e87e0a235266d9c5adc9deb4b2e29b54d009',
+      //      '0x0000000000000000000000000000000000000000000000000000000000000000' ],
+      //   transactionHash: '0x624deac09ea059caea62143be6e27d00eab0bf4b24d039139b7fed86f76d5267',
+      //   logIndex: 55 }
+      const addressLogs = log.address;
+      const makerAddress = '0x' + log.topics[1].slice(26, 66).toLowerCase();
+      const makerToken = '0x' + log.topics[2].slice(26, 66).toLowerCase();
+      const takerToken = '0x' + log.topics[3].slice(26, 66).toLowerCase();
+      if (addressLogs === AppConfig.astProtocolAddress
+          && makerAddress === this.airswapService.asProtocol.wallet.address.toLowerCase()) {
+        // pass
+
+      }
+
+    });
   }
 
   setPricingLogic() {
@@ -221,6 +261,8 @@ export class PriceService {
             expirationTimer.unsubscribe();
             if (this.openOrders[makerToken][takerToken][signature]) {
               delete this.openOrders[makerToken][takerToken][signature];
+
+              // check if transaction was actually mined?
               this.getBalancesAndPrices()
               .then(() => {
                 this.updateLiquidity(); // calculate the new liquid balances

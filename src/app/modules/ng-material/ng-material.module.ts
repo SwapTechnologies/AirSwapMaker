@@ -5,8 +5,8 @@ import { MatAutocompleteModule, MatBadgeModule, MatBottomSheetModule, MatButtonM
   MatCardModule, MatCheckboxModule, MatDialogModule, MatFormFieldModule,
   MatGridListModule, MatIconModule, MatInputModule, MatListModule, MatMenuModule,
   MatProgressSpinnerModule, MatPaginatorModule, MatSelectModule, MatSidenavModule,
-  MatSnackBarModule, MatTableModule, MatTabsModule, MatToolbarModule,
-  MatTooltipModule
+  MatSliderModule, MatSlideToggleModule, MatSnackBarModule, MatTableModule,
+  MatTabsModule, MatToolbarModule, MatTooltipModule
   } from '@angular/material';
 
 @NgModule({
@@ -29,6 +29,8 @@ import { MatAutocompleteModule, MatBadgeModule, MatBottomSheetModule, MatButtonM
     MatProgressSpinnerModule,
     MatSelectModule,
     MatSidenavModule,
+    MatSliderModule,
+    MatSlideToggleModule,
     MatSnackBarModule,
     MatTableModule,
     MatTabsModule,
@@ -53,6 +55,8 @@ import { MatAutocompleteModule, MatBadgeModule, MatBottomSheetModule, MatButtonM
     MatProgressSpinnerModule,
     MatSelectModule,
     MatSidenavModule,
+    MatSliderModule,
+    MatSlideToggleModule,
     MatSnackBarModule,
     MatTableModule,
     MatTabsModule,

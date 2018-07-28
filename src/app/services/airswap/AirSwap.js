@@ -23,13 +23,13 @@ class AirSwap {
     const networkName = networkId === 'mainnet' ? 'homestead' : 'rinkeby'
 
     // Create infura provider by default
-    let provider = new providers.InfuraProvider(networkName, infuraKey)
+    this.provider = new providers.InfuraProvider(networkName, infuraKey)
 
     // If user specified, use a geth/parity node instead
-    provider = nodeAddress ? new providers.JsonRpcProvider(nodeAddress, networkName) : provider
+    this.provider = nodeAddress ? new providers.JsonRpcProvider(nodeAddress, networkName) : this.provider
 
     // Create an ethereum wallet object for signing orders
-    this.wallet = new Wallet(privateKey, provider)
+    this.wallet = new Wallet(privateKey, this.provider)
 
     // Create an AirSwap contract object based on environment
     this.exchangeContract =

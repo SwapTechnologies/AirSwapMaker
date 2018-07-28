@@ -4,6 +4,7 @@ import { MatDialog } from '@angular/material';
 import { DialogEnterPrivateKeyComponent } from './dialog-enter-private-key/dialog-enter-private-key.component';
 import { DialogLoadKeystoreComponent } from './dialog-load-keystore/dialog-load-keystore.component';
 import { AirswapService } from '../../services/airswap.service';
+import { PriceService } from '../../services/price.service';
 import * as fs from 'fs';
 import * as ethers from 'ethers';
 import { Web3Service } from '../../services/web3.service';
@@ -20,6 +21,7 @@ export class AccountComponent implements OnInit {
   public errorMessage = '';
   constructor(
     public airswapService: AirswapService,
+    public priceService: PriceService,
     public web3Service: Web3Service,
     public dialog: MatDialog,
   ) { }
@@ -36,7 +38,12 @@ export class AccountComponent implements OnInit {
 
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        this.airswapService.connect(result);
+        this.airswapService.connect(result)
+        .then(() => {
+          if (this.airswapService.connected) {
+            this.priceService.listenToFilledEvents();
+          }
+        });
       }
     });
   }
@@ -55,7 +62,12 @@ export class AccountComponent implements OnInit {
           ethers.Wallet.fromEncryptedWallet(JSON.stringify(jsonData), result)
           .then(wallet => {
             this.errorMessage = '';
-            this.airswapService.connect(wallet.privateKey);
+            this.airswapService.connect(wallet.privateKey)
+            .then(() => {
+              if (this.airswapService.connected) {
+                this.priceService.listenToFilledEvents();
+              }
+            });
           }).catch(error => {
             this.errorMessage = 'Wallet decryption failed. Wrong password.';
           });

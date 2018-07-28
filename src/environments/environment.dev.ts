@@ -6,9 +6,12 @@
 export const AppConfig = {
   production: false,
   environment: 'DEV',
-  networkId: 'mainnet',
-  tokenMetadata: 'https://token-metadata.airswap.io/tokens',
-  astAddress: '0x27054b13b1b798b345b591a4d22e6562d47ea75a',
-  wethAddress: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
+  infuraKey: '506w9CbDQR8fULSDR7H0',
+  networkId: 'rinkeby',
+  tokenMetadata: 'https://token-metadata.airswap.io/rinkebyTokens',
+  astProtocolAddress: '0x07fc7c43d8168a2730344e5cf958aaecc3b42b41',
+  astAddress: '0xcc1cbd4f67cceb7c001bd4adf98451237a193ff8',
+  wethAddress: '0xc778417e063141139fce010982780140aa0cd5ab',
   ethAddress: '0x0000000000000000000000000000000000000000',
+  etherscanAddress: 'https://rinkeby.etherscan.io',
 };

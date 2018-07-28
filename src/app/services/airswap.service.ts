@@ -17,7 +17,6 @@ export class AirswapService {
 
   public connected = false;
   public asProtocol: any;
-  private infuraAPI = '506w9CbDQR8fULSDR7H0';
 
   public intents = [];
 
@@ -37,13 +36,13 @@ export class AirswapService {
     private web3Service: Web3Service,
   ) { }
 
-  connect(privateKey: string) {
+  connect(privateKey: string): Promise<any> {
     this.asProtocol = new AirSwap({
       privateKey: privateKey,
-      infuraKey: this.infuraAPI,
+      infuraKey: AppConfig.infuraKey,
       networkId: AppConfig.networkId,
     });
-    this.asProtocol.connect()
+    return this.asProtocol.connect()
     .then((result) => {
       this.connected = true;
       this.web3Service.connectedAddress = this.asProtocol.wallet.address.toLowerCase();
