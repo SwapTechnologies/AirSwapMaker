@@ -198,6 +198,7 @@ export class IntentsComponent implements OnInit {
         const idx = this.findIdxOfIntent(intent, newIntentList);
         if (idx >= 0) {
           newIntentList.splice( idx, 1 );
+          this.priceService.removeAmountLimit(intent.makerToken, intent.takerToken);
           this.priceService.removePriceOffer(intent.makerToken, intent.takerToken);
         }
       }

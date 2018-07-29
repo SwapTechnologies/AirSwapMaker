@@ -384,10 +384,18 @@ export class PriceService {
 
   removePriceOffer(makerToken, takerToken) {
     // function to remove answering requests of a certain token pair
-    if (this.limitPrices[makerToken] &&
-      this.limitPrices[makerToken][takerToken]) {
-        delete this.limitPrices[makerToken][takerToken];
-      }
+    if (this.limitPrices[makerToken]
+        && this.limitPrices[makerToken][takerToken]) {
+      delete this.limitPrices[makerToken][takerToken];
+    }
+  }
+
+  removeAmountLimit(makerToken, takerToken) {
+    if (this.balancesLimits[makerToken]
+      && this.balancesLimits[makerToken][takerToken]) {
+    delete this.balancesLimits[makerToken][takerToken];
+    this.updateLiquidity();
+    }
   }
 
   getUsdPrices(): Promise<any> {
