@@ -17,6 +17,13 @@
     left: 50%;
     transform: translateY(-50%) translateX(-50%);
   }
+
+  .addTokenButton {
+    position: absolute;
+    left: 60%;
+    top: 50%;
+    transform: translateY(-50%);
+  }
 }
 
 .balances {

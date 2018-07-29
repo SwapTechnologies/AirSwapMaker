@@ -6,6 +6,7 @@ import { HttpClient } from '@angular/common/http';
 import { TimerObservable } from 'rxjs/observable/TimerObservable';
 
 import { AppConfig } from '../../environments/environment';
+import { pad } from '../utils/formatting';
 
 @Injectable({
   providedIn: 'root'
@@ -42,6 +43,11 @@ export class PriceService {
     private http: HttpClient
   ) {
     this.startContinuousPriceBalanceUpdating();
+    this.airswapService.connectedSubject.subscribe(connected => {
+      if (connected) {
+        this.listenToFilledEvents();
+      }
+    });
   }
 
   startContinuousPriceBalanceUpdating() {
@@ -78,38 +84,65 @@ export class PriceService {
     this.algorithmRunning = false;
   }
 
+  emergencyShutdown() {
+    console.log('Something went terribly wrong. Emergency shutdown!');
+    this.limitPrices = {};
+    this.airswapService.logout();
+  }
+
   listenToFilledEvents() {
     this.listeningToFilledEvent = true;
     console.log('Start listening on chain for Filled Events');
+    const paddedMakerAddress = '0x' + pad(this.airswapService.asProtocol.wallet.address.toLowerCase().slice('2'), 64, '0');
+    console.log('Listening for topics: ', this.filledEventTopic, paddedMakerAddress);
     this.airswapService.asProtocol.provider
-    .on([this.filledEventTopic], (log) => {
+    .on([this.filledEventTopic, paddedMakerAddress], (log) => {
       console.log('FilledEvent triggered', log);
-      // filled event triggered, typical event:
-      // { blockNumber: 6040052,
-      //   blockHash: '0xa28581505c9ae495c7aa83d44d557a40dee62d1af954e68ccfa81d1ca9d3db99',
-      //   transactionIndex: 94,
-      //   removed: false,
-      //   address: '0x8fd3121013A07C57f0D69646E86E7a4880b467b7',
-      //   data: '0x0000000000000000000000000000000000000000000000000000000000000
-      //     1f4000000000000000000000000063b30ca02db00d7172fe2f4db35d5f3d58a6f53
-      //     0000000000000000000000000000000000000000000000000084170354bfbfff
-      //     000000000000000000000000000000000000000000000000000000005b5b407e
-      //     0000000000000000000000000000000000000000000000000000000003bfe02b',
-      //   topics:
-      //    [ '0xe59c5e56d85b2124f5e7f82cb5fcc6d28a4a241a9bdd732704ac9d3b6bfc98ab',
-      //      '0x00000000000000000000000069c2983f1289be1297eed90b404abf902c8403c6',
-      //      '0x000000000000000000000000aec2e87e0a235266d9c5adc9deb4b2e29b54d009',
-      //      '0x0000000000000000000000000000000000000000000000000000000000000000' ],
-      //   transactionHash: '0x624deac09ea059caea62143be6e27d00eab0bf4b24d039139b7fed86f76d5267',
-      //   logIndex: 55 }
-      const addressLogs = log.address;
+      const addressLogs = log.address.toLowerCase();
       const makerAddress = '0x' + log.topics[1].slice(26, 66).toLowerCase();
-      const makerToken = '0x' + log.topics[2].slice(26, 66).toLowerCase();
-      const takerToken = '0x' + log.topics[3].slice(26, 66).toLowerCase();
       if (addressLogs === AppConfig.astProtocolAddress
           && makerAddress === this.airswapService.asProtocol.wallet.address.toLowerCase()) {
-        // pass
+        const hash = log.transactionHash;
+        console.log('One of your offered orders was taken:', hash);
+        this.airswapService.getAirSwapTransactionByHash(hash)
+        .then(result => {
+          console.log('transaction: ', result);
+          if (result) {
+            if (this.openOrders[result.makerToken] && this.openOrders[result.makerToken][result.takerToken]) {
+              const order = this.openOrders[result.makerToken][result.takerToken][result.signature];
+              if (order) {
+                order.expirationTimer.unsubscribe();
+                if (this.balancesLimits[result.makerToken] && this.balancesLimits[result.makerToken][result.takerToken]) {
+                  // reduce limit of max amount you are selling of this token
+                  this.balancesLimits[result.makerToken][result.takerToken] -= result.makerAmount;
+                }
+                delete this.openOrders[result.makerToken][result.takerToken][result.signature];
+                this.getBalances()
+                .then(() => {
+                  if (this.algorithmRunning) {
+                    this.algorithmCallbackOnUpdate();
+                  }
+                });
 
+              } else {
+                // there is a order with you as maker address, that you dont keep track off?
+                // something is wrong here!
+                console.log('Transaction was not found in open orders. Lost track of orders? Shutdown.');
+                this.emergencyShutdown();
+              }
+            } else {
+              console.log('Pair was not found in open orders. Lost track of orders? Shutdown.', this.openOrders, result.signature);
+              this.emergencyShutdown();
+            }
+          } else {
+            console.log('Failed to get transaction.');
+          }
+        });
+      } else {
+        console.log('Something was odd with the filled event:',
+        addressLogs,
+        AppConfig.astProtocolAddress,
+        makerAddress, this.airswapService.asProtocol.wallet.address.toLowerCase());
       }
 
     });
@@ -150,10 +183,12 @@ export class PriceService {
 
       if (!this.limitPrices[makerToken] || !this.limitPrices[makerToken][takerToken]) {
         // no price set for pair
+        console.log('No price set for this pair');
         return;
       }
 
       if (!this.balancesLiquidity[makerToken] || !this.balancesLiquidity[makerToken][takerToken]) {
+        console.log('No liquidity set for this pair');
         // no liquidity for pair
         return;
       }
@@ -237,10 +272,10 @@ export class PriceService {
 
         // testmode, dont send it
         console.log('answer:', signedOrder);
-        // this.airswapService.asProtocol.call(
-        //   takerAddress, // send order to address who requested it
-        //   { id: msg.id, jsonrpc: '2.0', result: signedOrder }, // response id should match their `msg.id`
-        // );
+        this.airswapService.asProtocol.call(
+          takerAddress, // send order to address who requested it
+          { id: msg.id, jsonrpc: '2.0', result: signedOrder }, // response id should match their `msg.id`
+        );
 
         // store currently openOrder in a mapping for every maker Token
         if (!this.openOrders[makerToken]) {
@@ -249,8 +284,9 @@ export class PriceService {
             this.openOrders[makerToken][takerToken] = {};
           }
         }
-        const signature = signedOrder.v + signedOrder.r + signedOrder.s;
-        const expirationTimer = TimerObservable.create(0, 1000)
+        const signature = '0x' + signedOrder.v.toString(16) + signedOrder.r.slice(2) + signedOrder.s.slice(2);
+        console.log('Saving signature in open orders.', signature);
+        signedOrder.expirationTimer = TimerObservable.create(0, 1000)
         .subscribe( () => {
           const currentTime = Math.round(new Date().getTime() / 1000);
           // find a way to check if this transaction was taken and mined
@@ -258,7 +294,7 @@ export class PriceService {
             // when expiration timer is up, end the timer and delete the order
             // update the balances and if a algorithm is running notify it
             // that something may have updated
-            expirationTimer.unsubscribe();
+            signedOrder.expirationTimer.unsubscribe();
             if (this.openOrders[makerToken][takerToken][signature]) {
               delete this.openOrders[makerToken][takerToken][signature];
 
@@ -273,7 +309,7 @@ export class PriceService {
             }
           }
         });
-        this.openOrders[makerToken][signature] = signedOrder;
+        this.openOrders[makerToken][takerToken][signature] = signedOrder;
         this.updateLiquidity();
       });
     });

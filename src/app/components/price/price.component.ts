@@ -2,8 +2,11 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { AirswapService } from '../../services/airswap.service';
 import { Erc20Service } from '../../services/erc20.service';
 import { PriceService } from '../../services/price.service';
+import { MatDialog } from '@angular/material';
+import { WrapEthComponent } from '../../dialogs/wrap-eth/wrap-eth.component';
 
 import { TimerObservable } from 'rxjs/observable/TimerObservable';
+import { AppConfig } from '../../../environments/environment';
 
 @Component({
   selector: 'app-price',
@@ -16,12 +19,16 @@ export class PriceComponent implements OnInit, OnDestroy {
   public enteredAmounts = {};
 
   public enteredExpiration: number;
+
+  public amountWethSelling = 0;
+  public neededWeth = 0;
   objectKeys = Object.keys;
 
   constructor(
     public airswapService: AirswapService,
     public erc20Service: Erc20Service,
     public priceService: PriceService,
+    public dialog: MatDialog,
   ) {
     this.enteredExpiration = Math.floor(this.priceService.expirationTime / 60);
   }
@@ -49,6 +56,7 @@ export class PriceComponent implements OnInit, OnDestroy {
       this.priceService.updateCountdown = 100;
       this.priceService.startContinuousPriceBalanceUpdating();
     }
+    this.calculateWethSelling();
   }
 
   ngOnDestroy() {
@@ -79,6 +87,7 @@ export class PriceComponent implements OnInit, OnDestroy {
         takerProps.address,
         amount * makerProps.powerDecimals);
       this.priceService.updateLiquidity();
+      this.calculateWethSelling();
     }
   }
 
@@ -99,5 +108,67 @@ export class PriceComponent implements OnInit, OnDestroy {
   refreshBalances() {
     this.priceService.getBalances();
     this.priceService.getUsdPrices();
+  }
+
+  calculateWethSelling() {
+    // given a list of delta balances, calculate how much weth you need for this currently
+    let amountWethSelling = 0;
+    for (const token in this.priceService.balancesLimits[AppConfig.wethAddress]) {
+      // ignore eth and weth
+      if (token !== AppConfig.wethAddress
+          && token !== AppConfig.ethAddress
+          && this.priceService.balancesLimits[AppConfig.wethAddress][token]) {
+
+        amountWethSelling += this.priceService.balancesLimits[AppConfig.wethAddress][token];
+      }
+    }
+    this.amountWethSelling = amountWethSelling;
+
+    const wethBalance = this.priceService.balances[AppConfig.wethAddress];
+    this.neededWeth = this.amountWethSelling - wethBalance; // in wei
+  }
+
+  // addToken(): void {
+  //   const dialogRef = this.dialog.open(RebalanceAddTokenComponent, {});
+
+  //   dialogRef.afterClosed().subscribe(result => {
+  //     if (result) {
+  //       this.refreshBalances();
+  //     }
+  //   });
+  // }
+
+  wrapEth() {
+    this.airswapService.getGasPrice()
+    .then(gasPrice => {
+      const dialogRef = this.dialog.open(WrapEthComponent, {
+        data: {'proposedWrapAmount': this.neededWeth},
+        width: '400px',
+      });
+
+      dialogRef.afterClosed().subscribe(result => {
+        if (result) {
+          result.then(mined => {
+            console.log('Ether was wrapped.');
+            console.log(mined);
+          });
+          this.refreshBalances();
+        }
+      });
+    });
+  }
+
+  objectKeysSortedBySymbol(object): any {
+    return Object.keys(object).sort((a, b) => {
+      const nameA = this.airswapService.tokenProps[a].symbol;
+      const nameB = this.airswapService.tokenProps[b].symbol;
+      if (nameA < nameB) {
+        return -1;
+      }
+      if (nameA > nameB) {
+        return 1;
+      }
+      return 0;
+    });
   }
 }

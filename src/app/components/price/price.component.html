@@ -17,6 +17,17 @@
         <mat-icon>autorenew</mat-icon>
       </button>
     </div>
+
+    <!-- <div class='addTokenButton'>
+      <button
+      mat-icon-button
+      color="primary"
+      matTooltip="Add a token to watch in portfolio"
+      [disabled]="rebalanceService.algorithmIsRunning"
+      (click)="addToken()">
+        <mat-icon>add</mat-icon>
+      </button>
+    </div> -->
   </div>
   <div>
     <mat-form-field class="expirationInput">
@@ -42,16 +53,16 @@
 
   <mat-card class='balances'>
     <div><i>Balances of Intents</i></div>
-    <div *ngFor="let token of objectKeys(priceService.balances)">
+    <div *ngFor="let token of objectKeysSortedBySymbol(priceService.balances)" style='text-align: right;'>
       <span *ngIf="priceService.balances[token] && airswapService.tokenProps[token]">
         {{priceService.balances[token] / airswapService.tokenProps[token].powerDecimals | number: '1.1-8'}} {{airswapService.tokenProps[token].symbol}}
       </span>
     </div>
   </mat-card>
 
-  <mat-card class='liquidBalances'>
-    <div><i>Liquid Balances</i></div>
-    <div *ngFor="let makerToken of objectKeys(priceService.balancesLiquidity)">
+  <mat-card class='liquidBalances' *ngIf="objectKeys(priceService.balancesLiquidity).length > 0">
+    <div><i>Current Amount Limits</i></div>
+    <div *ngFor="let makerToken of objectKeys(priceService.balancesLiquidity)" style='text-align: right;'>
       <span *ngIf="priceService.balancesLiquidity[makerToken] && airswapService.tokenProps[makerToken]">
         <div *ngFor="let takerToken of objectKeys(priceService.balancesLiquidity[makerToken])">
           <span *ngIf="priceService.balancesLiquidity[makerToken] && airswapService.tokenProps[takerToken]">
@@ -59,6 +70,18 @@
           </span>
         </div>
       </span>
+    </div>
+    <div *ngIf="neededWeth > 0">
+      <div><b>You need to wrap</b></div>
+      <div>{{neededWeth / 1e18 | number: '1.1-8'}} WETH</div>
+      <button
+        mat-button
+        color='primary'
+        matTooltip='Wrap ETH to WETH'
+        (click)='wrapEth()'>
+        WRAP ETH
+      </button>
+      <br>
     </div>
   </mat-card>
 
@@ -74,6 +97,11 @@
           matInput
           number
           (keydown.enter)="setAmount(
+            intent.makerProps,
+            intent.takerProps,
+            enteredAmounts[intent.makerProps.address+intent.takerProps.address]
+          )"
+          (blur)="setAmount(
             intent.makerProps,
             intent.takerProps,
             enteredAmounts[intent.makerProps.address+intent.takerProps.address]
@@ -108,6 +136,11 @@
           matInput
           number
           (keydown.enter)="setPrice(
+            intent.makerProps,
+            intent.takerProps,
+            enteredPrices[intent.makerProps.address+intent.takerProps.address]
+          )"
+          (blur)="setPrice(
             intent.makerProps,
             intent.takerProps,
             enteredPrices[intent.makerProps.address+intent.takerProps.address]
@@ -149,7 +182,7 @@
             [disabled]='priceService.algorithmRunning'>
             <mat-icon>clear</mat-icon>
           </button>
-          <button
+          <!-- <button
           mat-icon-button
           matSuffix
           matTooltip='Show Options'
@@ -159,7 +192,7 @@
             intent.makerProps,
             intent.takerProps)">
             <mat-icon>more_vert</mat-icon>
-          </button>
+          </button> -->
         </mat-form-field>
       </div>
     </div>

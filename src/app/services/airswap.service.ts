@@ -6,6 +6,9 @@ import { Erc20Service } from './erc20.service';
 import { Web3Service } from './web3.service';
 import { HttpClient } from '@angular/common/http';
 
+import { Subject } from 'rxjs/Subject';
+import { removeLeadingZeros } from '../utils/formatting';
+
 const fs = require('fs');
 const path = require('path');
 const electron = require('electron');
@@ -29,6 +32,7 @@ export class AirswapService {
   public astBalance = 0;
   public remainingIntents = 0;
 
+  public connectedSubject = new Subject<boolean>();
 
   constructor(
     private erc20Service: Erc20Service,
@@ -45,6 +49,7 @@ export class AirswapService {
     return this.asProtocol.connect()
     .then((result) => {
       this.connected = true;
+      this.connectedSubject.next(true);
       this.web3Service.connectedAddress = this.asProtocol.wallet.address.toLowerCase();
       this.web3Service.astDexAddress = this.asProtocol.exchangeContract.address;
 
@@ -163,6 +168,7 @@ export class AirswapService {
     this.storeIntentsToLocalFile();
     this.setIntents([]); // remove intents from indexer
     this.onConnectionClose();
+    this.connectedSubject.next(false);
     this.asProtocol.disconnect();
   }
 
@@ -252,6 +258,33 @@ export class AirswapService {
       'makerToken': makerAddress.toLowerCase(),
       'takerToken': takerAddress.toLowerCase(),
       'role': 'maker'
-    }
+    };
+  }
+
+  getAirSwapTransactionByHash(hash): Promise<any> {
+    return this.asProtocol.provider.waitForTransaction(hash)
+    .then(result => {
+      if (result && result.data && result.to) {
+        const data = result.data;
+        const isFilledEvent = result.to.toLowerCase() === AppConfig.astProtocolAddress
+                              && data.slice(0, 10) === '0x1d4d691d';
+        if (isFilledEvent) {
+          return {
+            'hash': result.hash,
+            'makerAddress': removeLeadingZeros('0x' + data.slice(10, 10 + 64)),
+            'makerAmount': parseInt('0x' + data.slice(10 + 64, 10 + 2 * 64), 16),
+            'makerToken': removeLeadingZeros('0x' + data.slice(10 + 2 * 64, 10 + 3 * 64)),
+            'takerAddress': removeLeadingZeros('0x' + data.slice(10 + 3 * 64, 10 + 4 * 64)),
+            'takerAmount': parseInt('0x' + data.slice(10 + 4 * 64, 10 + 5 * 64), 16),
+            'takerToken': removeLeadingZeros('0x' + data.slice(10 + 5 * 64, 10 + 6 * 64)),
+            'expiration': parseInt('0x' + data.slice(10 + 6 * 64, 10 + 7 * 64), 16),
+            'nonce': '0x' + data.slice(10 + 7 * 64, 10 + 8 * 64),
+            'signature': removeLeadingZeros('0x' + data.slice(10 + 8 * 64, 10 + 11 * 64)), // v+r+s
+          };
+        } else {
+          return null;
+        }
+      }
+    });
   }
 }

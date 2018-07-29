@@ -38,12 +38,7 @@ export class AccountComponent implements OnInit {
 
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        this.airswapService.connect(result)
-        .then(() => {
-          if (this.airswapService.connected) {
-            this.priceService.listenToFilledEvents();
-          }
-        });
+        this.airswapService.connect(result);
       }
     });
   }
@@ -62,12 +57,7 @@ export class AccountComponent implements OnInit {
           ethers.Wallet.fromEncryptedWallet(JSON.stringify(jsonData), result)
           .then(wallet => {
             this.errorMessage = '';
-            this.airswapService.connect(wallet.privateKey)
-            .then(() => {
-              if (this.airswapService.connected) {
-                this.priceService.listenToFilledEvents();
-              }
-            });
+            this.airswapService.connect(wallet.privateKey);
           }).catch(error => {
             this.errorMessage = 'Wallet decryption failed. Wrong password.';
           });

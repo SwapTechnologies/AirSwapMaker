@@ -91,7 +91,8 @@ export class RebalanceService {
         continue; // weth is included in currentFraction, goalBalances of eth
       }
       if (this.goalFractions[token] !== undefined
-          && this.priceService.usdPricesByToken[token]) {
+          && this.priceService.usdPricesByToken[token]
+          && this.airswapService.tokenProps[token]) {
         goalBalances[token] =
           this.currentTotalPortfolioValue * this.goalFractions[token] /
           this.priceService.usdPricesByToken[token] *
