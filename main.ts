@@ -39,6 +39,11 @@ function createWindow() {
     win.reload();
   });
 
+  win.webContents.on('new-window', (e, thisUrl) => {
+    e.preventDefault();
+    require('electron').shell.openExternal(thisUrl);
+  });
+
   // Emitted when the window is closed.
   win.on('closed', () => {
     // Dereference the window object, usually you would store window
