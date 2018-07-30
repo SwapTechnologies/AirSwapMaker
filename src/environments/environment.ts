@@ -1,6 +1,7 @@
 export const AppConfig = {
   production: false,
   environment: 'LOCAL',
+  version: require('../../package.json').version,
   infuraKey: '506w9CbDQR8fULSDR7H0',
   networkId: 'mainnet',
   tokenMetadata: 'https://token-metadata.airswap.io/tokens',

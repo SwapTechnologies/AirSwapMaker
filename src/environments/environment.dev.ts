@@ -6,6 +6,7 @@
 export const AppConfig = {
   production: false,
   environment: 'DEV',
+  version: require('../../package.json').version,
   infuraKey: '506w9CbDQR8fULSDR7H0',
   networkId: 'rinkeby',
   tokenMetadata: 'https://token-metadata.airswap.io/rinkebyTokens',
