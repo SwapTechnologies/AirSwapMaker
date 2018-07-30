@@ -8,6 +8,7 @@ import { PriceService } from '../../services/price.service';
 import * as fs from 'fs';
 import * as ethers from 'ethers';
 import { Web3Service } from '../../services/web3.service';
+import { AppConfig } from '../../../environments/environment';
 
 @Component({
   selector: 'app-account',
@@ -19,6 +20,8 @@ export class AccountComponent implements OnInit {
   @ViewChild('keystoreFileInput') inputKeystore;
 
   public errorMessage = '';
+  public etherscanAddress = AppConfig.etherscanAddress;
+
   constructor(
     public airswapService: AirswapService,
     public priceService: PriceService,

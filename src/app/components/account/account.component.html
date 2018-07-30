@@ -26,7 +26,9 @@
 
 
 <div *ngIf="airswapService.connected && web3Service.connectedAddress">
-  You are connected as {{web3Service.connectedAddress}}
+  You are connected as <a href='{{etherscanAddress}}/address/{{web3Service.connectedAddress}}' target='_blank'>{{web3Service.connectedAddress}}
+    <mat-icon>exit_to_app</mat-icon>
+  </a>
   <div>
     <button
     mat-button
