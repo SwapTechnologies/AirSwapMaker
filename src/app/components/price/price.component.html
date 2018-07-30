@@ -140,11 +140,6 @@
             intent.takerProps,
             enteredPrices[intent.makerProps.address+intent.takerProps.address]
           )"
-          (blur)="setPrice(
-            intent.makerProps,
-            intent.takerProps,
-            enteredPrices[intent.makerProps.address+intent.takerProps.address]
-          )"
           [disabled]="priceService.algorithmRunning"
           placeholder="Price in {{intent.takerProps.symbol}} per {{intent.makerProps.symbol}}"
           [(ngModel)]='enteredPrices[intent.makerProps.address+intent.takerProps.address]'>
