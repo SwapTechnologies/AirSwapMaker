@@ -99,7 +99,7 @@ export class RebalanceComponent implements OnInit {
     let sumUnsetFractions = 0;
     let nUnset = 0;
     for (const token of this.airswapService.tokenList) {
-      if (token === this.wethAddress) {
+      if (token === this.wethAddress) { // ignore weth for sum of fractions
         continue;
       }
       if (this.rebalanceService.goalFractions[token] !== undefined) {
@@ -127,6 +127,9 @@ export class RebalanceComponent implements OnInit {
       } else if (sumUnsetFractions > 0) { // distribute the remaining fraction proportionally
         const rescaleFactor = (1 - sumSetFractions) / sumUnsetFractions;
         for (const token of this.airswapService.tokenList) {
+          if (token === this.wethAddress) {
+            continue;
+          }
           if (!(this.rebalanceService.goalFractions[token])
               && this.rebalanceService.currentFractions[token] !== undefined) {
             this.rebalanceService.goalFractions[token] =

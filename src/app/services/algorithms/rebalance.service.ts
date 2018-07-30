@@ -77,6 +77,9 @@ export class RebalanceService {
         delete currentFractions[AppConfig.wethAddress];
       }
       this.currentFractions = currentFractions;
+      // console.log('Current portfolio value:', this.currentTotalPortfolioValue);
+      // console.log('Current balances:', JSON.parse(JSON.stringify(this.priceService.balances)));
+      // console.log('Current fractions:', JSON.parse(JSON.stringify(this.currentFractions)));
     });
   }
 
@@ -110,6 +113,8 @@ export class RebalanceService {
 
     this.goalBalances = goalBalances;
     this.deltaBalances = deltaBalances;
+    // console.log('Goal Balnaces:', JSON.parse(JSON.stringify(this.goalBalances)));
+    // console.log('Delta Balances:', JSON.parse(JSON.stringify(this.deltaBalances)));
     this.calculateNeededWeth();
     return this.calculateNeededIntents();
   }
@@ -219,6 +224,7 @@ export class RebalanceService {
         // by blocking manual setIntent and manual setPrices
         this.priceService.startAlgorithm();
         this.algorithmIsRunning = true;
+        this.priceService.algorithmCallbackOnUpdate = this.updateIteration.bind(this);
 
         this.updateCountdown = 100;
         this.updateTimer = TimerObservable.create(0, 100)
@@ -285,6 +291,7 @@ export class RebalanceService {
       this.updateTimer = null;
     }
     this.priceService.stopAlgorithm();
+    this.priceService.algorithmCallbackOnUpdate = () => {};
     this.priceService.limitPrices = {}; // remove all pricing
     this.algorithmIsRunning = false;
     this.priceService.updateCountdown = 100;

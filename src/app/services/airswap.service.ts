@@ -7,7 +7,7 @@ import { Web3Service } from './web3.service';
 import { HttpClient } from '@angular/common/http';
 
 import { Subject } from 'rxjs/Subject';
-import { removeLeadingZeros } from '../utils/formatting';
+import { removeLeadingZeros, pad } from '../utils/formatting';
 
 const fs = require('fs');
 const path = require('path');
@@ -32,6 +32,7 @@ export class AirswapService {
   public astBalance = 0;
   public remainingIntents = 0;
 
+  public filledEventTopic = '0xe59c5e56d85b2124f5e7f82cb5fcc6d28a4a241a9bdd732704ac9d3b6bfc98ab';
   public connectedSubject = new Subject<boolean>();
 
   constructor(
@@ -53,7 +54,7 @@ export class AirswapService {
       this.web3Service.connectedAddress = this.asProtocol.wallet.address.toLowerCase();
       this.web3Service.astDexAddress = this.asProtocol.exchangeContract.address;
 
-      this.asProtocol.CALL_ON_CLOSE = this.onConnectionClose;
+      this.asProtocol.CALL_ON_CLOSE = this.onConnectionClose.bind(this);
       const localIntents = this.locallyStoredIntents[this.web3Service.connectedAddress];
       if (localIntents) {
         this.setIntents(localIntents)
@@ -80,13 +81,17 @@ export class AirswapService {
 
   getIntents(): Promise<any> {
     if (this.connected) {
-      // always include eth in tokenList
-      const tokenList = [AppConfig.ethAddress];
+      // always include eth and weth in tokenList
+      const tokenList = [AppConfig.ethAddress, AppConfig.wethAddress];
       const tokenProps = {};
 
       const ethProps = this.erc20Service.getToken(AppConfig.ethAddress);
       ethProps['powerDecimals'] = 1e18;
       tokenProps[AppConfig.ethAddress] = ethProps;
+
+      const wethProps = this.erc20Service.getToken(AppConfig.wethAddress);
+      wethProps['powerDecimals'] = 1e18;
+      tokenProps[AppConfig.wethAddress] = wethProps;
 
       return this.asProtocol.getIntents()
       .then(result => {
@@ -165,15 +170,15 @@ export class AirswapService {
   }
 
   logout(): void {
-    this.storeIntentsToLocalFile();
     this.setIntents([]); // remove intents from indexer
     this.onConnectionClose();
-    this.connectedSubject.next(false);
     this.asProtocol.disconnect();
   }
 
   onConnectionClose(): void {
     console.log('the connection is being closed.');
+    this.connectedSubject.next(false);
+    this.storeIntentsToLocalFile();
     this.connected = false;
   }
 
@@ -286,5 +291,24 @@ export class AirswapService {
         }
       }
     });
+  }
+
+  getAirSwapLogs(fromBlock: number, toBlock: number, address?: string): Promise<any> {
+    let paddedMakerAddress: string;
+    if (address) {
+      paddedMakerAddress = '0x' +
+        pad(address.toLowerCase().slice(2), 64, '0');
+    } else {
+      paddedMakerAddress = '0x' +
+        pad(this.asProtocol.wallet.address.toLowerCase().slice(2), 64, '0');
+    }
+
+    return this.asProtocol.provider.getLogs({
+      fromBlock: fromBlock,
+      toBlock: toBlock,
+      address: AppConfig.astProtocolAddress,
+      topics: [this.filledEventTopic, paddedMakerAddress]
+    });
+
   }
 }

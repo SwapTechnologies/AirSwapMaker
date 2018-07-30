@@ -6,7 +6,6 @@ import { HttpClient } from '@angular/common/http';
 import { TimerObservable } from 'rxjs/observable/TimerObservable';
 
 import { AppConfig } from '../../environments/environment';
-import { pad } from '../utils/formatting';
 
 @Injectable({
   providedIn: 'root'
@@ -30,9 +29,7 @@ export class PriceService {
   public algorithmRunning = false;
   public blacklistAddress = {};
 
-  public listeningToFilledEvent = false;
-  public filledEventTopic = '0xe59c5e56d85b2124f5e7f82cb5fcc6d28a4a241a9bdd732704ac9d3b6bfc98ab';
-
+  public lastCheckedBlocknumber: number;
   public algorithmCallbackOnUpdate = () => {};
 
 
@@ -43,9 +40,14 @@ export class PriceService {
     private http: HttpClient
   ) {
     this.startContinuousPriceBalanceUpdating();
+
     this.airswapService.connectedSubject.subscribe(connected => {
       if (connected) {
-        this.listenToFilledEvents();
+        this.airswapService.asProtocol.provider.getBlockNumber()
+        .then(blocknumber => {
+          console.log('Starting connection to chain, current blocknumber: ', blocknumber);
+          this.lastCheckedBlocknumber = blocknumber;
+        });
       }
     });
   }
@@ -90,61 +92,71 @@ export class PriceService {
     this.airswapService.logout();
   }
 
-  listenToFilledEvents() {
-    this.listeningToFilledEvent = true;
-    console.log('Start listening on chain for Filled Events');
-    const paddedMakerAddress = '0x' + pad(this.airswapService.asProtocol.wallet.address.toLowerCase().slice('2'), 64, '0');
-    console.log('Listening for topics: ', this.filledEventTopic, paddedMakerAddress);
-    this.airswapService.asProtocol.provider
-    .on([this.filledEventTopic, paddedMakerAddress], (log) => {
-      console.log('FilledEvent triggered', log);
-      const addressLogs = log.address.toLowerCase();
-      const makerAddress = '0x' + log.topics[1].slice(26, 66).toLowerCase();
-      if (addressLogs === AppConfig.astProtocolAddress
-          && makerAddress === this.airswapService.asProtocol.wallet.address.toLowerCase()) {
-        const hash = log.transactionHash;
-        console.log('One of your offered orders was taken:', hash);
-        this.airswapService.getAirSwapTransactionByHash(hash)
-        .then(result => {
-          console.log('transaction: ', result);
-          if (result) {
-            if (this.openOrders[result.makerToken] && this.openOrders[result.makerToken][result.takerToken]) {
-              const order = this.openOrders[result.makerToken][result.takerToken][result.signature];
-              if (order) {
-                order.expirationTimer.unsubscribe();
+  checkForFilledEvents(): Promise<any> {
+    return this.airswapService.asProtocol.provider.getBlockNumber()
+    .then(currentBlocknumber => {
+      const lastBlocknumber = this.lastCheckedBlocknumber;
+      if (currentBlocknumber > lastBlocknumber) {
+        this.lastCheckedBlocknumber = currentBlocknumber;
+        // always check a about 30s additionally back, to be sure that nothing is missed somehow
+        return this.airswapService.getAirSwapLogs(lastBlocknumber - 3, currentBlocknumber);
+      } else {
+        return false;
+      }
+    }).then(logs => {
+      if (logs && logs.length > 0) {
+        const promiseList = [];
+        for (const log of logs) {
+          const hash = log.transactionHash;
+          promiseList.push(
+            this.airswapService.getAirSwapTransactionByHash(hash)
+            .then(result => {
+              if (result
+                  && this.openOrders[result.makerToken]
+                  && this.openOrders[result.makerToken][result.takerToken]
+                  && this.openOrders[result.makerToken][result.takerToken][result.signature]) {
+                const order = this.openOrders[result.makerToken][result.takerToken][result.signature];
+                order.expirationTimer.unsubscribe(); // stop the countdown timer
                 if (this.balancesLimits[result.makerToken] && this.balancesLimits[result.makerToken][result.takerToken]) {
                   // reduce limit of max amount you are selling of this token
                   this.balancesLimits[result.makerToken][result.takerToken] -= result.makerAmount;
                 }
-                delete this.openOrders[result.makerToken][result.takerToken][result.signature];
-                this.getBalances()
-                .then(() => {
-                  if (this.algorithmRunning) {
-                    this.algorithmCallbackOnUpdate();
-                  }
-                });
 
-              } else {
-                // there is a order with you as maker address, that you dont keep track off?
-                // something is wrong here!
-                console.log('Transaction was not found in open orders. Lost track of orders? Shutdown.');
-                this.emergencyShutdown();
+                // remove the order from the mapping, check if maps empty and remove them as well in case
+                delete this.openOrders[result.makerToken][result.takerToken][result.signature];
+                if (Object.keys(this.openOrders[result.makerToken][result.takerToken]).length === 0
+                    && this.openOrders[result.makerToken][result.takerToken].constructor === Object) {
+                  delete this.openOrders[result.makerToken][result.takerToken];
+                  if (Object.keys(this.openOrders[result.makerToken]).length === 0
+                    && this.openOrders[result.makerToken].constructor === Object) {
+                    delete this.openOrders[result.makerToken];
+                  }
+                }
               }
-            } else {
-              console.log('Pair was not found in open orders. Lost track of orders? Shutdown.', this.openOrders, result.signature);
-              this.emergencyShutdown();
-            }
-          } else {
-            console.log('Failed to get transaction.');
-          }
-        });
+            })
+          );
+        }
+        // after all found logs have been dealt with
+        return Promise.all(promiseList);
       } else {
-        console.log('Something was odd with the filled event:',
-        addressLogs,
-        AppConfig.astProtocolAddress,
-        makerAddress, this.airswapService.asProtocol.wallet.address.toLowerCase());
+        // no logs were found
+        return false;
+      }
+    }).then(foundLogs => {
+      if (foundLogs === false) {
+        return false;
+      } else {
+        return this.getBalances(); // get current balances and update liquidity
+      }
+    }).then(gotBalances => {
+      if (gotBalances === false) {
+        return false;
       }
 
+      if (this.algorithmRunning) {
+        this.algorithmCallbackOnUpdate(); // tell algorithm that values might have been updated
+      }
+      return true;
     });
   }
 
@@ -285,7 +297,7 @@ export class PriceService {
           }
         }
         const signature = '0x' + signedOrder.v.toString(16) + signedOrder.r.slice(2) + signedOrder.s.slice(2);
-        console.log('Saving signature in open orders.', signature);
+        // console.log('Saving signature in open orders.', signature);
         signedOrder.expirationTimer = TimerObservable.create(0, 1000)
         .subscribe( () => {
           const currentTime = Math.round(new Date().getTime() / 1000);
@@ -296,7 +308,16 @@ export class PriceService {
             // that something may have updated
             signedOrder.expirationTimer.unsubscribe();
             if (this.openOrders[makerToken][takerToken][signature]) {
+              // remove the order from the mapping, check if maps empty and remove them as well in case
               delete this.openOrders[makerToken][takerToken][signature];
+              if (Object.keys(this.openOrders[makerToken][takerToken]).length === 0
+                  && this.openOrders[makerToken][takerToken].constructor === Object) {
+                delete this.openOrders[makerToken][takerToken];
+                if (Object.keys(this.openOrders[makerToken]).length === 0
+                  && this.openOrders[makerToken].constructor === Object) {
+                  delete this.openOrders[makerToken];
+                }
+              }
 
               // check if transaction was actually mined?
               this.getBalancesAndPrices()
@@ -447,6 +468,8 @@ export class PriceService {
 
   updateLiquidity(): void {
     const balancesLiquidity = {};
+    // console.log('Balances Limits:', this.balancesLimits);
+    // console.log('Open Orders:', this.openOrders);
     for (const makerToken in this.balancesLimits) {
       if (this.balancesLimits[makerToken]) {
         // check all tokens you are market making
@@ -479,6 +502,7 @@ export class PriceService {
   getBalancesAndPrices(): Promise<any> {
     const promiseList = [];
     promiseList.push(this.getUsdPrices());
+    promiseList.push(this.checkForFilledEvents());
     promiseList.push(this.getBalances());
     return Promise.all(promiseList);
   }
