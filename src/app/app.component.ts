@@ -46,6 +46,7 @@ export class AppComponent {
     } else {
       console.log('You are running in Web mode.');
     }
+    console.log('AirSwapMaker Version:', AppConfig.version);
 
     this.airswapService.loadIntentsFromLocalFile(); // load local file of intents (still have to set them after log in to specific account)
   }
