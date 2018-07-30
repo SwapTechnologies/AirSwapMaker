@@ -106,8 +106,7 @@ export class PriceComponent implements OnInit, OnDestroy {
   }
 
   refreshBalances() {
-    this.priceService.getBalances();
-    this.priceService.getUsdPrices();
+    this.priceService.getBalancesAndPrices();
   }
 
   calculateWethSelling() {
