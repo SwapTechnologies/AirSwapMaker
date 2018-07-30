@@ -1,6 +1,6 @@
 {
   "name": "airswapmaker",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "An electron app built with Angular to make markets on AirSwap",
   "homepage": "https://github.com/DomiDre/airswapmaker",
   "main": "main.js",
