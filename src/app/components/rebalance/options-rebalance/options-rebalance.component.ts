@@ -13,6 +13,7 @@ export class OptionsRebalanceComponent implements OnInit {
 
   public enteredExpiration: number;
   public enteredPriceModifier: number;
+  public continuousPriceChecked: boolean;
 
   constructor(
     public dialogRef: MatDialogRef<OptionsRebalanceComponent>,
@@ -22,6 +23,7 @@ export class OptionsRebalanceComponent implements OnInit {
   ) {
     this.enteredExpiration = Math.floor(this.priceService.expirationTime / 60);
     this.enteredPriceModifier = (this.rebalanceService.priceModifier - 1) * 100;
+    this.continuousPriceChecked = this.rebalanceService.continuousUpdatePrices;
   }
 
   setExpiration() {
@@ -34,6 +36,12 @@ export class OptionsRebalanceComponent implements OnInit {
     this.rebalanceService.priceModifier = (this.enteredPriceModifier / 100) + 1;
     if (this.rebalanceService.algorithmIsRunning) {
       this.rebalanceService.updateIteration();
+    }
+  }
+
+  updateContinuousPrice(event) {
+    if (event) {
+      this.rebalanceService.continuousUpdatePrices = event.checked;
     }
   }
 
