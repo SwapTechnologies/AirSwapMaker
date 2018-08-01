@@ -89,6 +89,7 @@ export class PriceService {
   emergencyShutdown() {
     console.log('Something went terribly wrong. Emergency shutdown!');
     this.limitPrices = {};
+    this.stopAlgorithm();
     this.airswapService.logout();
   }
 
@@ -432,6 +433,24 @@ export class PriceService {
 
       // crypto compare doesnt know WETH prices
       usdPrices['WETH'] = usdPrices['ETH'];
+      // check if price of a previously set token has jumped significantly
+      // for later: add here second source of pricing for cross check
+      for (const price in usdPrices) {
+        if (usdPrices[price] && this.usdPrices[price]) {
+          const relChange = usdPrices[price] / this.usdPrices[price];
+          console.log(price, usdPrices[price], this.usdPrices[price], relChange);
+          if (relChange > 1.1 || relChange < 0.9) {
+            // price jumped way to fast, there may be something wrong with the price feed
+            // shut down
+            console.log(
+              'Price of', price, 'jumped by more than 10% in one time interval. Before: ',
+              this.usdPrices[price], '$ and after:', usdPrices[price], '$'
+            );
+            this.emergencyShutdown();
+            break;
+          }
+        }
+      }
       this.usdPrices = usdPrices;
       // make a mapping token -> price for further use
       for (const token of this.airswapService.tokenList) {
