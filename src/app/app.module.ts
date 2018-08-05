@@ -46,6 +46,9 @@ import { RebalanceService } from './services/algorithms/rebalance.service';
 import { OptionsRebalanceComponent } from './components/rebalance/options-rebalance/options-rebalance.component';
 import { RebalanceAddTokenComponent } from './components/rebalance/rebalance-add-token/rebalance-add-token.component';
 import { WrapEthComponent } from './dialogs/wrap-eth/wrap-eth.component';
+
+import { NotificationService } from './services/notification.service';
+
 // AoT requires an exported function for factories
 export function HttpLoaderFactory(http: HttpClient) {
   return new TranslateHttpLoader(http, './assets/i18n/', '.json');
@@ -92,6 +95,7 @@ export function HttpLoaderFactory(http: HttpClient) {
     AirswapService,
     Erc20Service,
     LogsService,
+    NotificationService,
     PriceService,
     Web3Service,
     RebalanceService
