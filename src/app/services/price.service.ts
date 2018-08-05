@@ -32,8 +32,8 @@ export class PriceService {
   public blacklistAddress = {};
 
   public lastCheckedBlocknumber: number;
+  public lastTimestampPricecheck = 0;
   public algorithmCallbackOnUpdate = () => {};
-
 
   constructor(
     public airswapService: AirswapService,
@@ -48,7 +48,9 @@ export class PriceService {
       if (connected) {
         this.airswapService.asProtocol.provider.getBlockNumber()
         .then(blocknumber => {
-          this.notificationService.showMessage('Starting connection to chain, current blocknumber: ' + blocknumber);
+          this.notificationService.showMessage(
+            'Connected to Ethereum, current blocknumber: ' + blocknumber
+          );
           this.lastCheckedBlocknumber = blocknumber;
         });
       }
@@ -347,6 +349,7 @@ export class PriceService {
   }
 
   getPriceOfToken(tokenSymbol: string): Promise<any> {
+    this.lastTimestampPricecheck = Date.now(); // to limit api calls to every 10s, log timestamp of every call
     // http request to cryptocompare for current token prices
     return this.http.get(`https://min-api.cryptocompare.com/data/pricemulti?` +
     `fsyms=` + tokenSymbol + `&tsyms=USD`)
@@ -430,6 +433,10 @@ export class PriceService {
   }
 
   getUsdPrices(): Promise<any> {
+    if (Date.now() - this.lastTimestampPricecheck < 10000) {
+      return;
+    }
+
     this.updateCountdown = 0; // reset timer in any case, try not to have too many api calls to cryptocompare
 
     // make a list of all token symbols in the intents
@@ -439,7 +446,6 @@ export class PriceService {
     }
     return this.getPricesOfList(tokenSymbolList)
     .then((usdPrices) => {
-
       // crypto compare doesnt know WETH prices
       usdPrices['WETH'] = usdPrices['ETH'];
 
@@ -469,14 +475,18 @@ export class PriceService {
         this.usdPricesByToken[token] = this.usdPrices[this.airswapService.tokenProps[token].symbol];
       }
 
-      // note every price relative to the tokens within the intents itself
-      for (const intent of this.airswapService.intents) {
-        if (intent.makerProps && intent.takerProps
-            && this.usdPrices[intent.makerProps.symbol] && this.usdPrices[intent.takerProps.symbol]) {
-          intent.price = this.usdPrices[intent.makerProps.symbol] / this.usdPrices[intent.takerProps.symbol];
-        }
-      }
+      this.updateIntentPrices();
     });
+  }
+
+  updateIntentPrices() {
+    // note every price relative to the tokens within the intents itself
+    for (const intent of this.airswapService.intents) {
+      if (intent.makerProps && intent.takerProps
+          && this.usdPrices[intent.makerProps.symbol] && this.usdPrices[intent.takerProps.symbol]) {
+        intent.price = this.usdPrices[intent.makerProps.symbol] / this.usdPrices[intent.takerProps.symbol];
+      }
+    }
   }
 
   getBalances(): Promise<any> {

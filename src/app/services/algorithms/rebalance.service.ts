@@ -40,6 +40,12 @@ export class RebalanceService {
 
   public continuousUpdatePrices = true;
 
+  public relativeChangeLimit = 0.1;
+
+  public initialPrices = {};
+  public priceTracker = {};
+
+
   constructor(
     private airswapService: AirswapService,
     private priceService: PriceService,
@@ -223,8 +229,40 @@ export class RebalanceService {
         // stop the price updating timer and avoid users interferring into the algorithm flow
         // by blocking manual setIntent and manual setPrices
         this.priceService.startAlgorithm();
+
+        return this.updateCurrentValues(); // get current prices and balances one more time
+      }).then(() => {
         this.algorithmIsRunning = true;
+        this.priceService.updateIntentPrices();
+        // call updateIteration whenever the price service thinks an important event happened
         this.priceService.algorithmCallbackOnUpdate = this.updateIteration.bind(this);
+
+        // initialize the prices according to current cryptocompare prices + modifier
+        for (const intent of this.airswapService.intents) {
+          this.priceService.setPrice(
+            intent.makerToken,
+            intent.takerToken,
+            this.priceModifier * intent.price);
+        }
+
+        // store the initial prices seperately
+        this.initialPrices = JSON.parse(JSON.stringify(this.priceService.tokenPairPrices));
+
+        // initial lists for tracking of token prices of every pair
+        this.priceTracker = {};
+        for (const makerToken in this.initialPrices) {
+          if (this.initialPrices[makerToken]) {
+            if (!this.priceTracker[makerToken]) {
+              this.priceTracker = {};
+            }
+            for (const takerToken in this.initialPrices[makerToken]) {
+              if (this.initialPrices[makerToken][takerToken]
+                  && !this.priceTracker[makerToken][takerToken]) {
+              this.priceTracker[makerToken][takerToken] = [];
+              }
+            }
+          }
+        }
 
         this.updateCountdown = 100;
         this.updateTimer = TimerObservable.create(0, 100)
@@ -251,10 +289,25 @@ export class RebalanceService {
       // check if the algorithm can still run without problems
       if (!this.enoughIntents) {
         this.stopAlgorithm();
+        return;
       }
 
       for (const intent of this.airswapService.intents) {
         if (this.continuousUpdatePrices) {
+          if (this.initialPrices[intent.makerToken]
+              && this.initialPrices[intent.makerToken][intent.takerToken]) {
+            const relChange = this.initialPrices[intent.makerToken][intent.takerToken] / (this.priceModifier * intent.price);
+            if (relChange > (1 + this.relativeChangeLimit) || relChange < (1 - this.relativeChangeLimit)) {
+              console.log('Price is out of the limit from the initial start. Stopping rebalancing.');
+              this.stopAlgorithm();
+              return;
+            }
+          }
+          if (this.priceTracker[intent.makerToken]
+              && this.priceTracker[intent.makerToken][intent.takerToken]) {
+            // keep track of the last set prices
+            this.priceTracker[intent.makerToken][intent.takerToken].push(this.priceModifier * intent.price);
+          }
           this.priceService.setPrice(intent.makerToken, intent.takerToken, this.priceModifier * intent.price);
         }
 
@@ -292,7 +345,7 @@ export class RebalanceService {
     }
     this.priceService.stopAlgorithm();
     this.priceService.algorithmCallbackOnUpdate = () => {};
-    this.priceService.limitPrices = {}; // remove all pricing
+    this.priceService.tokenPairPrices = {}; // remove all pricing
     this.algorithmIsRunning = false;
     this.priceService.updateCountdown = 100;
     this.priceService.startContinuousPriceBalanceUpdating();

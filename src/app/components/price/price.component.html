@@ -145,10 +145,9 @@
           [(ngModel)]='enteredPrices[intent.makerProps.address+intent.takerProps.address]'>
           <mat-hint align="start">CryptoCompare Price: {{intent.price | number: '1.1-8'}} {{intent.takerProps.symbol}} per {{intent.makerProps.symbol}} </mat-hint>
           <mat-hint
-          *ngIf="priceService.limitPrices[intent.makerProps.address] &&
-          priceService.limitPrices[intent.makerProps.address][intent.takerProps.address]"
+          *ngIf="priceService.getPrice(intent.makerProps.address, intent.takerProps.address)"
           align="end">
-            Set to: {{priceService.limitPrices[intent.makerProps.address][intent.takerProps.address]}} {{intent.takerProps.symbol}} per {{intent.makerProps.symbol}} </mat-hint>
+            Set to: {{priceService.getPrice(intent.makerProps.address, intent.takerProps.address)}} {{intent.takerProps.symbol}} per {{intent.makerProps.symbol}} </mat-hint>
           <button
           mat-icon-button
           matSuffix
@@ -168,8 +167,7 @@
             mat-icon-button
             matSuffix
             color="primary"
-            *ngIf="priceService.limitPrices[intent.makerProps.address] &&
-            priceService.limitPrices[intent.makerProps.address][intent.takerProps.address]"
+            *ngIf="priceService.getPrice(intent.makerProps.address, intent.takerProps.address)"
             matTooltip="Stop buying {{intent.takerProps.symbol}}"
             (click)="removePrice(
               intent.makerProps,

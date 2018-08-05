@@ -170,11 +170,15 @@ export class RebalanceComponent implements OnInit {
   }
 
   refreshBalances(): Promise<any> {
-    this.rebalanceService.updateCountdown = 0;
-    return this.rebalanceService.updateCurrentValues()
-    .then(() => {
-      return this.rebalanceService.updateGoalValues();
-    });
+    if (this.rebalanceService.algorithmIsRunning) {
+      this.rebalanceService.updateIteration();
+    } else {
+      this.rebalanceService.updateCountdown = 0;
+      return this.rebalanceService.updateCurrentValues()
+      .then(() => {
+        return this.rebalanceService.updateGoalValues();
+      });
+    }
   }
 
   openOptions(): void {

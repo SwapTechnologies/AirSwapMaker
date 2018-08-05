@@ -80,13 +80,13 @@
       </div>
       <br>
     </div>
-    <div *ngIf="objectKeys(priceService.limitPrices).length > 0">
+    <div *ngIf="objectKeys(priceService.tokenPairPrices).length > 0">
       <div><i>Current Prices</i></div>
-      <div *ngFor="let makerToken of objectKeys(priceService.limitPrices)" style='text-align: right;'>
-        <span *ngIf="priceService.limitPrices[makerToken] && airswapService.tokenProps[makerToken]">
-          <div *ngFor="let takerToken of objectKeys(priceService.limitPrices[makerToken])">
-            <span *ngIf="priceService.limitPrices[makerToken] && airswapService.tokenProps[takerToken]">
-              {{priceService.limitPrices[makerToken][takerToken] | number: '1.1-8'}} {{airswapService.tokenProps[takerToken].symbol}} per {{airswapService.tokenProps[makerToken].symbol}}
+      <div *ngFor="let makerToken of objectKeys(priceService.tokenPairPrices)" style='text-align: right;'>
+        <span *ngIf="priceService.tokenPairPrices[makerToken] && airswapService.tokenProps[makerToken]">
+          <div *ngFor="let takerToken of objectKeys(priceService.tokenPairPrices[makerToken])">
+            <span *ngIf="priceService.tokenPairPrices[makerToken] && airswapService.tokenProps[takerToken]">
+              {{priceService.tokenPairPrices[makerToken][takerToken] | number: '1.1-8'}} {{airswapService.tokenProps[takerToken].symbol}} per {{airswapService.tokenProps[makerToken].symbol}}
             </span>
           </div>
         </span>
