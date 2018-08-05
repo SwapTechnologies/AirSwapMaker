@@ -6,12 +6,14 @@ import { HttpClient } from '@angular/common/http';
 import { TimerObservable } from 'rxjs/observable/TimerObservable';
 
 import { AppConfig } from '../../environments/environment';
+import { NotificationService } from './notification.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class PriceService {
-  public limitPrices = {};
+  public tokenPairPrices = {};
+
   public balances = {};
   public expirationTime = 300;
 
@@ -37,7 +39,8 @@ export class PriceService {
     public airswapService: AirswapService,
     public erc20Service: Erc20Service,
     private logsService: LogsService,
-    private http: HttpClient
+    private http: HttpClient,
+    private notificationService: NotificationService
   ) {
     this.startContinuousPriceBalanceUpdating();
 
@@ -45,7 +48,7 @@ export class PriceService {
       if (connected) {
         this.airswapService.asProtocol.provider.getBlockNumber()
         .then(blocknumber => {
-          console.log('Starting connection to chain, current blocknumber: ', blocknumber);
+          this.notificationService.showMessage('Starting connection to chain, current blocknumber: ' + blocknumber);
           this.lastCheckedBlocknumber = blocknumber;
         });
       }
@@ -87,10 +90,12 @@ export class PriceService {
   }
 
   emergencyShutdown() {
-    console.log('Something went terribly wrong. Emergency shutdown!');
-    this.limitPrices = {};
+    this.notificationService.showMessage(
+      'Emergency shutdown! Stop offering orders.',
+      'Ok.'
+    );
+    this.tokenPairPrices = {};
     this.stopAlgorithm();
-    this.airswapService.logout();
   }
 
   checkForFilledEvents(): Promise<any> {
@@ -194,7 +199,7 @@ export class PriceService {
         return;
       }
 
-      if (!this.limitPrices[makerToken] || !this.limitPrices[makerToken][takerToken]) {
+      if (!this.tokenPairPrices[makerToken] || !this.tokenPairPrices[makerToken][takerToken]) {
         // no price set for pair
         console.log('No price set for this pair');
         return;
@@ -238,19 +243,23 @@ export class PriceService {
         if (makerAmount) {
           // Taker wants to buy a number of makerToken
           answerTakerAmount = this.erc20Service.toFixed(
-            this.limitPrices[makerToken][takerToken] *
+            this.tokenPairPrices[makerToken][takerToken] *
             makerAmount * 10 ** (-makerProps.decimals + takerProps.decimals)
           );
-          this.logsService.addLog('Answering to sell for  ' +
+          this.notificationService.showMessage(
+            'Giving order for a sell of ' + answerMakerAmount * (10 ** (-makerProps.decimals)) +
+            ' ' + makerProps.symbol + ' for  ' +
             answerTakerAmount * (10 ** (-takerProps.decimals)) + ' ' +
             takerProps.symbol);
         } else {
           // Taker wants to sell a number of takerToken
           answerMakerAmount = this.erc20Service.toFixed(
-            takerAmount / this.limitPrices[makerToken][takerToken] *
+            takerAmount / this.tokenPairPrices[makerToken][takerToken] *
             10 ** (makerProps.decimals - takerProps.decimals)
           );
-          this.logsService.addLog('Answering to buy for  ' +
+          this.notificationService.showMessage(
+            'Giving order for a buy of ' + answerTakerAmount * (10 ** (-takerProps.decimals)) + ' ' +
+            takerProps.symbol + ' for  ' +
             answerMakerAmount * (10 ** (-makerProps.decimals)) + ' ' +
             makerProps.symbol);
         }
@@ -374,16 +383,16 @@ export class PriceService {
 
   setPrice(makerAddress: string, takerAddress: string, price: number) {
     if (price > 0) {
-      if (!this.limitPrices[makerAddress]) {
-        this.limitPrices[makerAddress] = {};
+      if (!this.tokenPairPrices[makerAddress]) {
+        this.tokenPairPrices[makerAddress] = {};
       }
-      this.limitPrices[makerAddress][takerAddress] = price;
+      this.tokenPairPrices[makerAddress][takerAddress] = price;
     }
   }
 
   getPrice(makerAddress: string, takerAddress: string): number {
-    if (this.limitPrices[makerAddress]) {
-      return this.limitPrices[makerAddress][takerAddress];
+    if (this.tokenPairPrices[makerAddress]) {
+      return this.tokenPairPrices[makerAddress][takerAddress];
     } else {
       return null;
     }
@@ -406,9 +415,9 @@ export class PriceService {
 
   removePriceOffer(makerToken, takerToken) {
     // function to remove answering requests of a certain token pair
-    if (this.limitPrices[makerToken]
-        && this.limitPrices[makerToken][takerToken]) {
-      delete this.limitPrices[makerToken][takerToken];
+    if (this.tokenPairPrices[makerToken]
+        && this.tokenPairPrices[makerToken][takerToken]) {
+      delete this.tokenPairPrices[makerToken][takerToken];
     }
   }
 
@@ -433,21 +442,24 @@ export class PriceService {
 
       // crypto compare doesnt know WETH prices
       usdPrices['WETH'] = usdPrices['ETH'];
-      // check if price of a previously set token has jumped significantly
-      // for later: add here second source of pricing for cross check
-      for (const price in usdPrices) {
-        if (usdPrices[price] && this.usdPrices[price]) {
-          const relChange = usdPrices[price] / this.usdPrices[price];
-          console.log(price, usdPrices[price], this.usdPrices[price], relChange);
-          if (relChange > 1.1 || relChange < 0.9) {
-            // price jumped way to fast, there may be something wrong with the price feed
-            // shut down
-            console.log(
-              'Price of', price, 'jumped by more than 10% in one time interval. Before: ',
-              this.usdPrices[price], '$ and after:', usdPrices[price], '$'
-            );
-            this.emergencyShutdown();
-            break;
+
+      if (this.algorithmRunning) {
+        // check if price of a previously set token has jumped significantly
+        // for later: add here second source of pricing for cross check
+        for (const price in usdPrices) {
+          if (usdPrices[price] && this.usdPrices[price]) {
+            const relChange = usdPrices[price] / this.usdPrices[price];
+            if (relChange > 1.1 || relChange < 0.9) {
+              // price jumped way to fast, there may be something wrong with the price feed
+              // shut down
+              this.notificationService.showMessage(
+                'CryptoCompare price of ' + price +
+                'jumped by more than 10% in one time interval. Before it was: ' +
+                this.usdPrices[price] + '$ and then: ' + usdPrices[price] + '$'
+              );
+              this.emergencyShutdown();
+              break;
+            }
           }
         }
       }
