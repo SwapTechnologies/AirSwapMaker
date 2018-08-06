@@ -17,3 +17,7 @@ export const round = (value, exp) => {
   value = value.toString().split('e');
   return +(value[0] + 'e' + (value[1] ? (+value[1] - exp) : -exp));
 };
+
+export const average =  (arr) => {
+  return arr.reduce( ( p, c ) => p + c, 0 ) / arr.length;
+};
