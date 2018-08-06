@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-
+import { AppConfig } from '../../environments/environment';
 declare var require: any;
 const Web3 = require('web3');
 
@@ -27,7 +27,7 @@ export class Web3Service {
   }
 
   connectInfura() {
-    this._web3 = new Web3('https://mainnet.infura.io/506w9CbDQR8fULSDR7H0');
+    this._web3 = new Web3('https://' + AppConfig.networkId + '.infura.io/506w9CbDQR8fULSDR7H0');
   }
 
   getBalance(address) {

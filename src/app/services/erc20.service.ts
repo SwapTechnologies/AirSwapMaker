@@ -50,17 +50,19 @@ export class Erc20Service {
       }
 
       // check for user tokens
-      const userDataPath = (electron.app || electron.remote.app).getPath('userData');
-      this.userTokenPath = path.join(userDataPath, 'userErc20Tokens.json');
-      try {
-        this.userTokens = JSON.parse(fs.readFileSync(this.userTokenPath));
-        for (const token in this.userTokens) {
-          if (this.userTokens[token]) {
-            this.tokens[token] = this.userTokens[token];
+      if (AppConfig.networkId === 'mainnet') {
+        const userDataPath = (electron.app || electron.remote.app).getPath('userData');
+        this.userTokenPath = path.join(userDataPath, 'userErc20Tokens.json');
+        try {
+          this.userTokens = JSON.parse(fs.readFileSync(this.userTokenPath));
+          for (const token in this.userTokens) {
+            if (this.userTokens[token]) {
+              this.tokens[token] = this.userTokens[token];
+            }
           }
+        } catch (error) {
+          // no user tokens
         }
-      } catch (error) {
-        // no user tokens
       }
       this.generateTokensTwins();
     });
@@ -157,7 +159,9 @@ export class Erc20Service {
       return contract.methods
       .balanceOf(address)
       .call()
-      .then(balance => balance);
+      .then(balance => {
+        return balance;
+      });
     }
   }
 

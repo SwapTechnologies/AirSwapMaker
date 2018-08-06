@@ -185,7 +185,12 @@ export class AirswapService {
   storeIntentsToLocalFile() {
     // store current intents to local file
     const userDataPath = (electron.app || electron.remote.app).getPath('userData');
-    const userIntentsPath = path.join(userDataPath, 'userIntents.json');
+    let userIntentsPath = '';
+    if (AppConfig.networkId === 'mainnet') {
+      userIntentsPath = path.join(userDataPath, 'userIntents.json');
+    } else {
+      userIntentsPath = path.join(userDataPath, 'userTestnetIntents.json');
+    }
     const intentList = [];
     for (const intent of this.intents) {
       intentList.push({
@@ -201,7 +206,12 @@ export class AirswapService {
   loadIntentsFromLocalFile() {
     // check if there are intents locally stored on start up
     const userDataPath = (electron.app || electron.remote.app).getPath('userData');
-    const userIntentsPath = path.join(userDataPath, 'userIntents.json');
+    let userIntentsPath = '';
+    if (AppConfig.networkId === 'mainnet') {
+      userIntentsPath = path.join(userDataPath, 'userIntents.json');
+    } else {
+      userIntentsPath = path.join(userDataPath, 'userTestnetIntents.json');
+    }
     try {
       const intents = JSON.parse(fs.readFileSync(userIntentsPath));
       this.locallyStoredIntents = intents;
