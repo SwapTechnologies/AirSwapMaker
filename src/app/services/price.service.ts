@@ -73,6 +73,10 @@ export class PriceService {
         }
       });
     }
+    const currentTimestamp = Date.now();
+    if (currentTimestamp - this.lastTimestampPricecheck < 10000 && this.updateCountdown >= 100) {
+      this.updateCountdown = (Date.now() - this.lastTimestampPricecheck) / 300;
+    }
   }
 
   stopContinuousPriceBalanceUpdating() {
@@ -349,6 +353,9 @@ export class PriceService {
   }
 
   getPriceOfToken(tokenSymbol: string): Promise<any> {
+    if (tokenSymbol === '' || tokenSymbol === undefined) {
+      return Promise.resolve([]);
+    }
     this.lastTimestampPricecheck = Date.now(); // to limit api calls to every 10s, log timestamp of every call
     // http request to cryptocompare for current token prices
     return this.http.get(`https://min-api.cryptocompare.com/data/pricemulti?` +
