@@ -1,8 +1,10 @@
 import { Injectable } from '@angular/core';
 import { AirswapService } from '../airswap.service';
 import { PriceService } from '../price.service';
+import { NotificationService } from '../notification.service';
 import { TimerObservable } from 'rxjs/observable/TimerObservable';
 import { AppConfig } from '../../../environments/environment';
+import { average } from '../../utils/math';
 
 @Injectable({
   providedIn: 'root'
@@ -41,7 +43,7 @@ export class RebalanceService {
   public continuousUpdatePrices = true;
 
   public relativeChangeLimit = 0.1;
-
+  public averageChangeLimit = 0.1;
   public initialPrices = {};
   public priceTracker = {};
 
@@ -49,6 +51,7 @@ export class RebalanceService {
   constructor(
     private airswapService: AirswapService,
     private priceService: PriceService,
+    private notificationService: NotificationService,
   ) { }
 
   updateCurrentValues(): Promise<any> {
@@ -83,9 +86,6 @@ export class RebalanceService {
         delete currentFractions[AppConfig.wethAddress];
       }
       this.currentFractions = currentFractions;
-      // console.log('Current portfolio value:', this.currentTotalPortfolioValue);
-      // console.log('Current balances:', JSON.parse(JSON.stringify(this.priceService.balances)));
-      // console.log('Current fractions:', JSON.parse(JSON.stringify(this.currentFractions)));
     });
   }
 
@@ -119,8 +119,6 @@ export class RebalanceService {
 
     this.goalBalances = goalBalances;
     this.deltaBalances = deltaBalances;
-    // console.log('Goal Balnaces:', JSON.parse(JSON.stringify(this.goalBalances)));
-    // console.log('Delta Balances:', JSON.parse(JSON.stringify(this.deltaBalances)));
     this.calculateNeededWeth();
     return this.calculateNeededIntents();
   }
@@ -253,7 +251,7 @@ export class RebalanceService {
         for (const makerToken in this.initialPrices) {
           if (this.initialPrices[makerToken]) {
             if (!this.priceTracker[makerToken]) {
-              this.priceTracker = {};
+              this.priceTracker[makerToken] = {};
             }
             for (const takerToken in this.initialPrices[makerToken]) {
               if (this.initialPrices[makerToken][takerToken]
@@ -298,7 +296,11 @@ export class RebalanceService {
               && this.initialPrices[intent.makerToken][intent.takerToken]) {
             const relChange = this.initialPrices[intent.makerToken][intent.takerToken] / (this.priceModifier * intent.price);
             if (relChange > (1 + this.relativeChangeLimit) || relChange < (1 - this.relativeChangeLimit)) {
-              console.log('Price is out of the limit from the initial start. Stopping rebalancing.');
+              this.notificationService.showMessage(
+                'Token price of ' +
+                intent.makerProps.symbol + ' for ' + intent.takerProps.symbol +
+                ' has jumped too far from initial value. Stopped rebalancing.'
+              );
               this.stopAlgorithm();
               return;
             }
@@ -307,6 +309,20 @@ export class RebalanceService {
               && this.priceTracker[intent.makerToken][intent.takerToken]) {
             // keep track of the last set prices
             this.priceTracker[intent.makerToken][intent.takerToken].push(this.priceModifier * intent.price);
+
+            // average over last 10 points
+            if ( this.priceTracker[intent.makerToken][intent.takerToken].length > 10 ) {
+              this.priceTracker[intent.makerToken][intent.takerToken].shift();
+            }
+            const avgChange = average(this.priceTracker[intent.makerToken][intent.takerToken]) / (this.priceModifier * intent.price);
+            if ( avgChange > (1 + this.averageChangeLimit) || avgChange < (1 - this.averageChangeLimit)) {
+              this.notificationService.showMessage(
+                'Price of ' +
+                intent.makerProps.symbol + ' for ' + intent.takerProps.symbol +
+                ' jumped too quick away from the average price. Stopped rebalancing');
+              this.stopAlgorithm();
+              return;
+            }
           }
           this.priceService.setPrice(intent.makerToken, intent.takerToken, this.priceModifier * intent.price);
         }
