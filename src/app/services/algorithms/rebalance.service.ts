@@ -42,7 +42,7 @@ export class RebalanceService {
 
   public continuousUpdatePrices = true;
 
-  public relativeChangeLimit = 0.1;
+  public relativeChangeLimit = 0.2;
   public averageChangeLimit = 0.1;
   public initialPrices = {};
   public priceTracker = {};
