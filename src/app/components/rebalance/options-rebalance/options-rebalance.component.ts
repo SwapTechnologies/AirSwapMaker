@@ -1,6 +1,7 @@
 import { Component, Inject, OnInit } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
 
+import { round } from '../../../utils/math';
 import { PriceService } from '../../../services/price.service';
 import { RebalanceService } from '../../../services/algorithms/rebalance.service';
 
@@ -13,6 +14,8 @@ export class OptionsRebalanceComponent implements OnInit {
 
   public enteredExpiration: number;
   public enteredPriceModifier: number;
+  public enteredRelativeChangeLimit: number;
+  public enteredAverageChangeLimit: number;
   public continuousPriceChecked: boolean;
 
   constructor(
@@ -22,7 +25,9 @@ export class OptionsRebalanceComponent implements OnInit {
     public rebalanceService: RebalanceService
   ) {
     this.enteredExpiration = Math.floor(this.priceService.expirationTime / 60);
-    this.enteredPriceModifier = (this.rebalanceService.priceModifier - 1) * 100;
+    this.enteredPriceModifier = round((this.rebalanceService.priceModifier - 1) * 100, 6);
+    this.enteredRelativeChangeLimit = round((this.rebalanceService.relativeChangeLimit) * 100, 6);
+    this.enteredAverageChangeLimit = round((this.rebalanceService.averageChangeLimit) * 100, 6);
     this.continuousPriceChecked = this.rebalanceService.continuousUpdatePrices;
   }
 
@@ -36,6 +41,18 @@ export class OptionsRebalanceComponent implements OnInit {
     this.rebalanceService.priceModifier = (this.enteredPriceModifier / 100) + 1;
     if (this.rebalanceService.algorithmIsRunning) {
       this.rebalanceService.updateIteration();
+    }
+  }
+
+  setRelativeChangeLimit() {
+    if (this.enteredRelativeChangeLimit > 0) {
+      this.rebalanceService.relativeChangeLimit = (this.enteredRelativeChangeLimit / 100);
+    }
+  }
+
+  setAverageChangeLimit() {
+    if (this.enteredAverageChangeLimit > 0) {
+      this.rebalanceService.averageChangeLimit = (this.enteredAverageChangeLimit / 100);
     }
   }
 

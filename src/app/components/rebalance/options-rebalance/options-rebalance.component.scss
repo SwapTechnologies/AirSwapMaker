@@ -1,13 +1,10 @@
-.expirationInput {
-  margin-top: 10px;
-  margin-bottom: 10px;
+.optionInput {
+  margin: 5px;
+  width: 100%;
+  mat-form-field {
+    width: 100%;
+    input {
+      width: 100%;
+    }
+  }
 }
-
-.priceModifierInput {
-  margin-bottom: 10px;
-}
-
-.keepPriceUpdatingInput {
-  margin-bottom: 10px;
-}
-

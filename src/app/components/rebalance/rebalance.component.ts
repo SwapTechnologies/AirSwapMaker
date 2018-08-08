@@ -183,6 +183,7 @@ export class RebalanceComponent implements OnInit {
 
   openOptions(): void {
     const dialogRef = this.dialog.open(OptionsRebalanceComponent, {
+      width: '500px'
     });
 
     dialogRef.afterClosed().subscribe(result => {

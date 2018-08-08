@@ -1,10 +1,11 @@
 <div>
-  <div class='expirationInput'>
+  <div class='optionInput'>
     <mat-form-field>
       <input
       matInput
       type='number'
       (keydown.enter)='setExpiration()'
+      (blur)='setExpiration()'
       placeholder='Set the expiration time for an given offer (in minutes)'
       [(ngModel)]='enteredExpiration'>
       <mat-hint align='end'>Set expiration: {{priceService.expirationTime / 60 | number: '1.1-2' }} min</mat-hint>
@@ -20,12 +21,13 @@
         </button>
     </mat-form-field>
   </div>
-  <div class='priceModifierInput'>
+  <div class='optionInput'>
     <mat-form-field>
       <input
       matInput
       type='number'
       (keydown.enter)='setPriceModifier()'
+      (blur)='setPriceModifier()'
       placeholder='Increase price by the set percentage'
       [(ngModel)]='enteredPriceModifier'>
       <mat-hint align='end'>Modifier is set to: {{(rebalanceService.priceModifier - 1) * 100 | number: '1.1-2' }} %</mat-hint>
@@ -48,5 +50,47 @@
     (change)='updateContinuousPrice($event)'>
       Continuously update prices
     </mat-slide-toggle>
+  </div>
+  <div class='optionInput' *ngIf="rebalanceService.continuousUpdatePrices">
+    <mat-form-field>
+      <input
+      matInput
+      type='number'
+      (keydown.enter)='setRelativeChangeLimit()'
+      (blur)='setRelativeChangeLimit()'
+      placeholder='At what total rel. % change of price should a safety stop trigger'
+      [(ngModel)]='enteredRelativeChangeLimit'>
+      <mat-hint align='end'>Safety Break is at: {{ rebalanceService.relativeChangeLimit * 100}} %</mat-hint>
+      <button
+        mat-icon-button
+        matSuffix
+        matTooltip='Set Total Relative Change Limit'
+        color='primary'
+        aria-label='Set Total Relative Change Limit'
+        (click)='setRelativeChangeLimit()'>
+          <mat-icon>fast_forward</mat-icon>
+        </button>
+    </mat-form-field>
+  </div>
+  <div class='optionInput' *ngIf="rebalanceService.continuousUpdatePrices">
+    <mat-form-field>
+      <input
+      matInput
+      type='number'
+      (keydown.enter)='setAverageChangeLimit()'
+      (blur)='setAverageChangeLimit()'
+      placeholder='At what % change relative to the average price should a safety stop trigger'
+      [(ngModel)]='enteredAverageChangeLimit'>
+      <mat-hint align='end'>Safety Break is at: {{ rebalanceService.averageChangeLimit * 100}} %</mat-hint>
+      <button
+        mat-icon-button
+        matSuffix
+        matTooltip='Set Average Change Limit'
+        color='primary'
+        aria-label='Set Average Change Limit'
+        (click)='setAverageChangeLimit()'>
+          <mat-icon>fast_forward</mat-icon>
+        </button>
+    </mat-form-field>
   </div>
 </div>
