@@ -280,7 +280,7 @@ export class PriceService {
 
         if (this.balancesLiquidity[makerToken][takerToken] < Number(answerMakerAmount)) {
           this.logsService.addLog('Cancelled. Your liquid balance is only  ' +
-          this.balancesLiquidity[makerToken] * (10 ** (-makerProps.decimals)) + ' ' +
+          this.balancesLiquidity[makerToken][takerToken] * (10 ** (-makerProps.decimals)) + ' ' +
             makerProps.symbol);
           return;
         }
@@ -545,6 +545,7 @@ export class PriceService {
       }
     }
     this.balancesLiquidity = balancesLiquidity;
+    console.log(this.balancesLiquidity);
   }
 
   getBalancesAndPrices(): Promise<any> {
