@@ -252,22 +252,12 @@ export class PriceService {
             this.tokenPairPrices[makerToken][takerToken] *
             makerAmount * 10 ** (-makerProps.decimals + takerProps.decimals)
           );
-          this.notificationService.showMessage(
-            'Giving order for a sell of ' + answerMakerAmount * (10 ** (-makerProps.decimals)) +
-            ' ' + makerProps.symbol + ' for  ' +
-            answerTakerAmount * (10 ** (-takerProps.decimals)) + ' ' +
-            takerProps.symbol);
         } else {
           // Taker wants to sell a number of takerToken
           answerMakerAmount = this.erc20Service.toFixed(
             takerAmount / this.tokenPairPrices[makerToken][takerToken] *
             10 ** (makerProps.decimals - takerProps.decimals)
           );
-          this.notificationService.showMessage(
-            'Giving order for a buy of ' + answerTakerAmount * (10 ** (-takerProps.decimals)) + ' ' +
-            takerProps.symbol + ' for  ' +
-            answerMakerAmount * (10 ** (-makerProps.decimals)) + ' ' +
-            makerProps.symbol);
         }
 
         // check if both parties have enough balance
@@ -284,6 +274,13 @@ export class PriceService {
             makerProps.symbol);
           return;
         }
+
+        this.notificationService.showMessage(
+          'Giving order ' + answerTakerAmount * (10 ** (-takerProps.decimals)) + ' ' +
+          takerProps.symbol + ' for  ' +
+          answerMakerAmount * (10 ** (-makerProps.decimals)) + ' ' +
+          makerProps.symbol
+        );
 
         const expiration = Math.round(new Date().getTime() / 1000) + this.expirationTime;
         const nonce = String((Math.random() * 100000).toFixed());
